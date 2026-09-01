@@ -1,0 +1,10 @@
+{
+  "name": "shmeera",
+  "private": true,
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w client"
+  }
+}
