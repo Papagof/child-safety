@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
-import { completeSignup, getMyProfile } from "../lib/rpc";
+import { createOrganization, getMyProfile, joinOrganizationByInvite } from "../lib/rpc";
 import type { User } from "../lib/types";
 
 interface StaffStatus {
@@ -9,19 +9,24 @@ interface StaffStatus {
   rooms: { id: string; name: string }[];
 }
 
+// Self-serve org creation mints exactly one first admin (mode "create");
+// joining an EXISTING org (mode "join", guardian-only) requires an
+// admin-shared invite code — there's no public directory of churches, and
+// staff accounts are always admin-created directly (lib/data.ts's
+// adminCreateStaff), never self-service.
+export type SignupMode = { mode: "create"; orgName: string } | { mode: "join"; inviteCode: string; phone?: string };
+
 interface AuthState {
   user: User | null;
   staff: StaffStatus | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  // Self-signup is guardian-only — staff accounts are created by an admin
-  // directly (lib/data.ts's adminCreateStaff), never self-service.
   signup: (
     email: string,
     password: string,
     fullName: string,
     consent: boolean,
-    phone?: string
+    modeArgs: SignupMode
   ) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -31,16 +36,16 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-// Bridges signUp() -> email confirmation -> first session: complete_signup()
-// needs the role/name chosen at signup time, but there's no session to call
-// it with until the confirmation link is clicked (a different page load).
+// Bridges signUp() -> email confirmation -> first session: creating/joining
+// an org needs the choices made at signup time, but there's no session to
+// act on until the confirmation link is clicked (a different page load).
 const PENDING_SIGNUP_KEY = "shmeera_pending_signup";
 
 interface PendingSignup {
   email: string;
   fullName: string;
   consent: boolean;
-  phone?: string;
+  modeArgs: SignupMode;
 }
 
 function savePendingSignup(p: PendingSignup) {
@@ -86,7 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // the role/name for this email before the confirmation redirect.
         const pending = readPendingSignup(session.user.email ?? "");
         if (pending) {
-          await completeSignup("guardian", pending.fullName, pending.consent, pending.phone);
+          if (pending.modeArgs.mode === "create") {
+            await createOrganization(pending.modeArgs.orgName, pending.fullName, pending.consent);
+          } else {
+            await joinOrganizationByInvite(pending.modeArgs.inviteCode, pending.fullName, pending.consent, pending.modeArgs.phone);
+          }
           clearPendingSignup();
           profile = await getMyProfile();
         }
@@ -118,18 +127,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh();
   }
 
-  async function signup(email: string, password: string, fullName: string, consent: boolean, phone?: string) {
+  async function signup(email: string, password: string, fullName: string, consent: boolean, modeArgs: SignupMode) {
     if (!consent) throw new Error("Consent is required to create an account");
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (!data.session) {
       // This project's Auth settings require email confirmation — there's no
-      // session yet to call complete_signup() with. Save the name for when
+      // session yet to create/join an org with. Save the choice for when
       // refresh() sees the first real session after confirming.
-      savePendingSignup({ email, fullName, consent, phone });
+      savePendingSignup({ email, fullName, consent, modeArgs });
       return { needsEmailConfirmation: true };
     }
-    await completeSignup("guardian", fullName, consent, phone);
+    if (modeArgs.mode === "create") {
+      await createOrganization(modeArgs.orgName, fullName, consent);
+    } else {
+      await joinOrganizationByInvite(modeArgs.inviteCode, fullName, consent, modeArgs.phone);
+    }
     await refresh();
     return { needsEmailConfirmation: false };
   }

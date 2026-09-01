@@ -17,13 +17,42 @@ function mapPickupPerson(row: any): PickupPerson {
   };
 }
 
-// --- auth ---------------------------------------------------------------
-export async function completeSignup(role: "guardian" | "staff", fullName: string, consent: boolean, phone?: string) {
-  await rpc("complete_signup", { p_role: role, p_full_name: fullName, p_phone: phone ?? null, p_consent: consent });
+// --- auth / organizations -------------------------------------------------
+// Self-serve org creation mints exactly one first admin; a guardian or staff
+// member joins an EXISTING org only via an admin-shared invite code — there
+// is no public directory of churches to browse.
+export function createOrganization(name: string, fullName: string, consent: boolean) {
+  return rpc<{ orgId: string; orgName: string }>("create_organization", { p_name: name, p_full_name: fullName, p_consent: consent });
+}
+
+export function joinOrganizationByInvite(inviteCode: string, fullName: string, consent: boolean, phone?: string) {
+  return rpc<{ orgId: string; orgName: string }>("join_organization_by_invite", {
+    p_invite_code: inviteCode,
+    p_full_name: fullName,
+    p_phone: phone ?? null,
+    p_consent: consent,
+  });
+}
+
+export function getInviteCode() {
+  return rpc<string>("get_invite_code");
+}
+
+export function regenerateInviteCode() {
+  return rpc<string>("regenerate_invite_code");
 }
 
 export interface MyProfile {
-  user: { id: string; email: string; fullName: string; role: "guardian" | "staff" | "admin"; phone: string | null; photoUrl: string | null };
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: "guardian" | "staff" | "admin";
+    phone: string | null;
+    photoUrl: string | null;
+    orgId: string;
+    orgName: string;
+  };
   staff: {
     approvalStatus: "pending" | "approved" | "rejected";
     backgroundCheckStatus: "pending" | "confirmed";

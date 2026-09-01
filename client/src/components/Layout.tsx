@@ -12,7 +12,10 @@ export function Layout({ links, children }: { links: { to: string; label: string
       <header className="bg-brand-900 text-white">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-bold text-lg tracking-tight">Shmeera</span>
+            <div className="leading-tight">
+              <span className="font-bold text-lg tracking-tight block">Shmeera</span>
+              {user?.orgName && <span className="text-xs text-brand-200 block">{user.orgName}</span>}
+            </div>
             <nav className="flex gap-1">
               {links.map((l) => (
                 <NavLink

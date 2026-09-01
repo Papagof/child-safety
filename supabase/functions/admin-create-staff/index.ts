@@ -52,8 +52,17 @@ Deno.serve(async (req) => {
     const { data: callerData } = await callerClient.auth.getUser();
     const adminId = callerData.user?.id;
 
+    // The caller's own org — this uses the service-role client for every
+    // other write below (which bypasses RLS entirely), so org membership
+    // must be enforced here in code, not left to a policy.
+    const { data: orgId, error: orgErr } = await callerClient.rpc("get_my_org_id");
+    if (orgErr || !orgId) {
+      return new Response(JSON.stringify({ error: "Could not determine your organization" }), { status: 400, headers: jsonHeaders });
+    }
+
     const body = await req.json();
-    const { email, password, fullName, phone, roomIds, consentConfirmed } = body ?? {};
+    const { email, password, fullName, phone, roomIds, consentConfirmed, role } = body ?? {};
+    const targetRole = role === "admin" ? "admin" : "staff";
 
     if (!email || !password || !fullName || !consentConfirmed) {
       return new Response(
@@ -67,6 +76,19 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // A fellow admin has no room assignments at all — only validate roomIds
+    // for a staff account, and only against rooms in the caller's own org.
+    if (targetRole === "staff" && Array.isArray(roomIds) && roomIds.length > 0) {
+      const { data: validRooms, error: roomsCheckErr } = await adminClient
+        .from("rooms")
+        .select("id")
+        .eq("org_id", orgId)
+        .in("id", roomIds);
+      if (roomsCheckErr || !validRooms || validRooms.length !== roomIds.length) {
+        return new Response(JSON.stringify({ error: "One or more rooms not found" }), { status: 400, headers: jsonHeaders });
+      }
+    }
+
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -79,9 +101,10 @@ Deno.serve(async (req) => {
 
     const { error: profileErr } = await adminClient.from("profiles").insert({
       id: newUserId,
-      role: "staff",
+      role: targetRole,
       full_name: fullName,
       phone: phone || null,
+      org_id: orgId,
       consent_at: new Date().toISOString(),
     });
     if (profileErr) {
@@ -89,29 +112,32 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: profileErr.message }), { status: 400, headers: jsonHeaders });
     }
 
-    const { error: staffDetailsErr } = await adminClient.from("staff_details").insert({
-      user_id: newUserId,
-      approval_status: "approved",
-      background_check_status: "pending",
-    });
-    if (staffDetailsErr) {
-      await adminClient.auth.admin.deleteUser(newUserId);
-      return new Response(JSON.stringify({ error: staffDetailsErr.message }), { status: 400, headers: jsonHeaders });
-    }
+    if (targetRole === "staff") {
+      const { error: staffDetailsErr } = await adminClient.from("staff_details").insert({
+        user_id: newUserId,
+        approval_status: "approved",
+        background_check_status: "pending",
+      });
+      if (staffDetailsErr) {
+        await adminClient.auth.admin.deleteUser(newUserId);
+        return new Response(JSON.stringify({ error: staffDetailsErr.message }), { status: 400, headers: jsonHeaders });
+      }
 
-    if (Array.isArray(roomIds) && roomIds.length > 0) {
-      const rows = roomIds.map((roomId: string) => ({ staff_id: newUserId, room_id: roomId }));
-      const { error: roomsErr } = await adminClient.from("staff_rooms").insert(rows);
-      if (roomsErr) {
-        return new Response(JSON.stringify({ error: roomsErr.message }), { status: 400, headers: jsonHeaders });
+      if (Array.isArray(roomIds) && roomIds.length > 0) {
+        const rows = roomIds.map((roomId: string) => ({ staff_id: newUserId, room_id: roomId }));
+        const { error: roomsErr } = await adminClient.from("staff_rooms").insert(rows);
+        if (roomsErr) {
+          await adminClient.auth.admin.deleteUser(newUserId);
+          return new Response(JSON.stringify({ error: roomsErr.message }), { status: 400, headers: jsonHeaders });
+        }
       }
     }
 
     await adminClient.from("audit_log").insert({
       actor_id: adminId ?? null,
       actor_role: "admin",
-      action: "staff_created_by_admin",
-      details: { staffId: newUserId, email, roomIds: roomIds ?? [] },
+      action: targetRole === "admin" ? "admin_created_by_admin" : "staff_created_by_admin",
+      details: { userId: newUserId, email, roomIds: roomIds ?? [] },
     });
 
     return new Response(JSON.stringify({ id: newUserId }), { status: 200, headers: jsonHeaders });

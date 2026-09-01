@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { listIncidents } from "../../lib/data";
 import { resolveIncident } from "../../lib/rpc";
+import { useAuth } from "../../context/AuthContext";
 import { useChannel } from "../../lib/useRealtime";
 import type { Incident } from "../../lib/types";
 
@@ -11,6 +12,7 @@ const TYPE_LABEL: Record<Incident["type"], string> = {
 };
 
 export default function Incidents() {
+  const { user } = useAuth();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [showResolved, setShowResolved] = useState(false);
 
@@ -23,7 +25,7 @@ export default function Incidents() {
     load();
   }, [load]);
 
-  useChannel("admin", () => load());
+  useChannel(user ? `admin:${user.orgId}` : null, () => load());
 
   return (
     <div className="max-w-3xl mx-auto space-y-3">

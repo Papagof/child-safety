@@ -7,6 +7,8 @@ export interface User {
   role: Role;
   photoUrl?: string | null;
   phone?: string | null;
+  orgId: string;
+  orgName: string;
 }
 
 export interface Room {

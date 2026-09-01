@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
+          org_id: string
           session_id: string | null
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          org_id: string
           session_id?: string | null
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          org_id?: string
           session_id?: string | null
         }
         Relationships: [
@@ -48,6 +51,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -65,6 +75,7 @@ export type Database = {
           created_at: string
           escalated: boolean
           id: string
+          org_id: string
           read_at: string | null
           sender_id: string
           sender_role: string
@@ -76,6 +87,7 @@ export type Database = {
           created_at?: string
           escalated?: boolean
           id?: string
+          org_id: string
           read_at?: string | null
           sender_id: string
           sender_role: string
@@ -87,6 +99,7 @@ export type Database = {
           created_at?: string
           escalated?: boolean
           id?: string
+          org_id?: string
           read_at?: string | null
           sender_id?: string
           sender_role?: string
@@ -94,6 +107,13 @@ export type Database = {
           urgent?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_messages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_messages_sender_id_fkey"
             columns: ["sender_id"]
@@ -115,6 +135,7 @@ export type Database = {
           created_at: string
           guardian_id: string
           id: string
+          org_id: string
           room_id: string
           session_id: string
           status: string
@@ -123,6 +144,7 @@ export type Database = {
           created_at?: string
           guardian_id: string
           id?: string
+          org_id: string
           room_id: string
           session_id: string
           status?: string
@@ -131,6 +153,7 @@ export type Database = {
           created_at?: string
           guardian_id?: string
           id?: string
+          org_id?: string
           room_id?: string
           session_id?: string
           status?: string
@@ -141,6 +164,13 @@ export type Database = {
             columns: ["guardian_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_threads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -215,6 +245,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          org_id: string
           reported_by: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -227,6 +258,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          org_id: string
           reported_by?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -239,6 +271,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          org_id?: string
           reported_by?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -248,6 +281,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "incidents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "incidents_reported_by_fkey"
             columns: ["reported_by"]
@@ -326,6 +366,27 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          name?: string
+        }
+        Relationships: []
+      }
       pickup_people: {
         Row: {
           added_by: string
@@ -386,6 +447,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          org_id: string
           phone: string | null
           photo_url: string | null
           role: string
@@ -395,6 +457,7 @@ export type Database = {
           created_at?: string
           full_name: string
           id: string
+          org_id: string
           phone?: string | null
           photo_url?: string | null
           role: string
@@ -404,11 +467,20 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          org_id?: string
           phone?: string | null
           photo_url?: string | null
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rooms: {
         Row: {
@@ -418,6 +490,7 @@ export type Database = {
           capacity: number
           id: string
           name: string
+          org_id: string
         }
         Insert: {
           active?: boolean
@@ -426,6 +499,7 @@ export type Database = {
           capacity?: number
           id?: string
           name: string
+          org_id?: string
         }
         Update: {
           active?: boolean
@@ -434,8 +508,17 @@ export type Database = {
           capacity?: number
           id?: string
           name?: string
+          org_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rooms_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -457,6 +540,7 @@ export type Database = {
           id: string
           is_transfer: boolean
           noshow_flagged: boolean
+          org_id: string
           room_id: string
           service_date: string
           status: string
@@ -481,6 +565,7 @@ export type Database = {
           id?: string
           is_transfer?: boolean
           noshow_flagged?: boolean
+          org_id: string
           room_id: string
           service_date: string
           status: string
@@ -505,6 +590,7 @@ export type Database = {
           id?: string
           is_transfer?: boolean
           noshow_flagged?: boolean
+          org_id?: string
           room_id?: string
           service_date?: string
           status?: string
@@ -530,6 +616,13 @@ export type Database = {
             columns: ["child_id"]
             isOneToOne: false
             referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -626,29 +719,6 @@ export type Database = {
         Returns: Json
       }
       approve_staff: { Args: { p_user_id: string }; Returns: undefined }
-      complete_signup: {
-        Args: {
-          p_consent?: boolean
-          p_full_name: string
-          p_phone?: string
-          p_role: string
-        }
-        Returns: {
-          consent_at: string | null
-          created_at: string
-          full_name: string
-          id: string
-          phone: string | null
-          photo_url: string | null
-          role: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "profiles"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       create_notification: {
         Args: {
           p_body: string
@@ -658,6 +728,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      create_organization: {
+        Args: { p_consent?: boolean; p_full_name: string; p_name: string }
+        Returns: Json
       }
       decline_checkin: {
         Args: { p_reason?: string; p_session_id: string }
@@ -678,8 +752,10 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: Json
       }
+      get_invite_code: { Args: never; Returns: string }
       get_live_counts: { Args: never; Returns: Json }
       get_live_sessions: { Args: never; Returns: Json }
+      get_my_org_id: { Args: never; Returns: string }
       get_my_profile: { Args: never; Returns: Json }
       get_my_sessions: { Args: never; Returns: Json }
       get_pickup_time_report: {
@@ -697,6 +773,15 @@ export type Database = {
         Returns: boolean
       }
       is_thread_participant: { Args: { p_thread_id: string }; Returns: boolean }
+      join_organization_by_invite: {
+        Args: {
+          p_consent?: boolean
+          p_full_name: string
+          p_invite_code: string
+          p_phone?: string
+        }
+        Returns: Json
+      }
       list_audit_log: {
         Args: {
           p_action?: string
@@ -742,6 +827,7 @@ export type Database = {
         Returns: Json
       }
       purge_old_records: { Args: { p_before: string }; Returns: Json }
+      regenerate_invite_code: { Args: never; Returns: string }
       reject_staff: { Args: { p_user_id: string }; Returns: undefined }
       report_incident: {
         Args: { p_description: string; p_room_id: string }

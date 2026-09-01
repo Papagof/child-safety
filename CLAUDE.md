@@ -9,6 +9,9 @@ everything). The full spec that drove this build is in
 [`docs/spec.md`](docs/spec.md) — treat its "Section 6: Security & Child-Safety
 Requirements" as the part that must never be simplified away.
 
+**Multi-tenant**: any number of independent churches/ministries (`organizations`) share
+this one deployment, each fully isolated from every other — see "Multi-tenancy" below.
+
 ## Stack
 
 Fully Supabase-native — there is no custom backend. The React client (`client/`) talks
@@ -17,21 +20,29 @@ directly to Supabase via `@supabase/supabase-js`:
 - **Client** (`client/`): React + TypeScript + Vite, React Router, Tailwind CSS, `qrcode.react`
   for code display, `@supabase/supabase-js` for everything backend-related.
 - **Auth**: Supabase Auth (`auth.users`) + a `public.profiles` table for app-level fields
-  (`role`, `full_name`, `phone`, `photo_url`). Signup flow: `supabase.auth.signUp()` →
-  (once a real session exists — immediately, or after email confirmation) the
-  `complete_signup` RPC creates the `profiles` row and blocks self-service `admin`.
+  (`role`, `full_name`, `phone`, `photo_url`, `org_id`). Signup flow: `supabase.auth.signUp()` →
+  (once a real session exists — immediately, or after email confirmation) either
+  `create_organization` (self-serve — names a new org, caller becomes its first admin) or
+  `join_organization_by_invite` (resolves an admin-shared invite code, caller becomes a
+  guardian in that org) creates the `profiles` row. Self-service `admin` is only ever the
+  first-admin-of-a-new-org path — there's no way to join an *existing* org as admin except
+  another admin creating you directly (see Edge Functions below).
 - **Database**: Postgres on project `mqjijvquvphlbdwbywox` (`supabase/migrations/`).
 - **Realtime**: Supabase Realtime `broadcast` channels (`room:{id}`, `guardian:{id}`,
-  `admin`, `thread:{id}`), sent via `realtime.send()` from inside the RPCs so a client
-  can never construct a payload for a channel it shouldn't see (esp. the code-bearing
-  guardian channel). Authorized by RLS policies on `realtime.messages`.
+  `admin:{orgId}`, `thread:{id}`, `notifications:{userId}`), sent via `realtime.send()` from
+  inside the RPCs so a client can never construct a payload for a channel it shouldn't see
+  (esp. the code-bearing guardian channel). Authorized by RLS policies on `realtime.messages`
+  — every one of these topic families checks org membership, not just `is_admin()`.
 - **Storage**: a private `photos` Storage bucket (`children/{id}/`, `pickup-people/{id}/`,
   `profiles/{id}/`), path-based RLS, signed URLs on read (`client/src/lib/data.ts`).
 - **Edge Functions**: `admin-create-staff` (`supabase/functions/`) — the one place that
   needs the service-role key (creating a login via `auth.admin.createUser`), so it can't
-  live as a plain RPC. Verifies the caller is a real admin via their own JWT before doing
-  anything privileged. Lets admin create an already-approved staff login directly, as an
-  alternative to staff self-signup (which needs email confirmation — see below).
+  live as a plain RPC. Verifies the caller is a real admin via their own JWT, then reads
+  the caller's own `org_id` (via `get_my_org_id()`) and stamps it on the new account —
+  since the service-role client bypasses RLS entirely, org enforcement here is done in the
+  function body, not left to a policy. Takes an optional `role: 'staff' | 'admin'`
+  (default `'staff'`) — **this is the only way to get a second admin into an org**, since
+  self-serve signup only ever mints a new org's first admin.
 - **Scheduled jobs**: `pg_cron` runs `escalate_unread_urgent_messages()` every minute —
   the durable replacement for what used to be an in-process timer.
 - Client env: `client/.env` (not committed) needs `VITE_SUPABASE_URL` /
@@ -64,6 +75,42 @@ blocker is resolved — this is the real, live architecture now, not a stand-in.
 - **Audit trail**: every check-in, check-out, decline, failed/mismatched code attempt,
   and urgent chat escalation must produce an `audit_log` and/or `incidents` row.
 
+## Multi-tenancy
+
+Every church/ministry is an `organizations` row (`id`, `name`, `invite_code`) with zero
+direct grants — reachable only through RPCs (`create_organization`, `get_invite_code`/
+`regenerate_invite_code`, both admin-only). `get_my_org_id()` is the central helper
+(security definer, mirrors `is_admin()`'s lockdown pattern exactly) — every place that
+used to gate on `is_admin()` alone now also checks `org_id = get_my_org_id()`.
+
+**Onboarding**: self-serve. Anyone can sign up and either start a brand-new ministry
+(`create_organization` — they become its first admin) or join an *existing* one via an
+admin-shared invite code (`join_organization_by_invite` — always as a guardian; staff are
+still admin-created-only, never self-signup). An admin can create a fellow admin the same
+way they create staff — `admin-create-staff` with `role: 'admin'`.
+
+**Denormalized `org_id`** lives directly on `profiles`, `rooms`, `sessions`, `incidents`,
+`chat_threads`, `chat_messages`, `audit_log` (queried/filtered directly by admin-facing
+RPCs, or need real write-time validation — not just visibility filtering). `staff_details`/
+`staff_rooms`/`children`/`pickup_people` deliberately have no column — each is one join hop
+from `profiles.org_id`, and their only admin-facing policy joins instead. `audit_log.org_id`
+is set by a `BEFORE INSERT` trigger (derives from `actor_id`'s profile, falling back to
+`session_id`'s org for the two cron jobs that log with no actor) rather than touching every
+one of its ~27 call sites. `rooms.org_id` has a column `DEFAULT public.get_my_org_id()` (not
+a trigger — a trigger's default isn't visible to the TypeScript type generator, which would
+otherwise mark the column required in the generated `Insert` type) since `rooms` is the one
+table the client inserts into directly via PostgREST, with no wrapping RPC.
+
+**When adding anything new**: a new admin-facing RPC needs `is_admin() and org_id =
+get_my_org_id()`, not `is_admin()` alone — that was the exact shape of the worst leaks found
+when this was retrofitted (an admin could see/act on every other org's rooms, sessions,
+staff, audit log, and — most severely — `purge_old_records` could permanently delete another
+org's history). A new realtime topic needs an org check in its `realtime.messages` policy,
+the same way `room:%`/`guardian:%`/`admin:%` do. A new table holding org-scoped data should
+get its own `org_id` column set explicitly by whichever RPC creates the row, validated
+against the org of whatever it's attached to (room/session/etc.) — don't assume a foreign
+key alone proves same-org.
+
 ## Spec coverage beyond the core flows
 
 Also implemented, closing gaps `docs/spec.md` described that the original build never
@@ -78,7 +125,8 @@ report form** (`report_incident`, separate from the pickup-mismatch-specific
 `flag_pickup_mismatch`), **richer audit-log search** by room/child/date range
 (`list_audit_log`), **admin reporting** (attendance, average pickup time, incidents over
 time — `get_attendance_report`/`get_pickup_time_report`/`get_incidents_report`),
-**consent capture at signup** (`profiles.consent_at`, enforced by `complete_signup`), a
+**consent capture at signup** (`profiles.consent_at`, enforced by `create_organization`/
+`join_organization_by_invite`), a
 guardian **data export** (client-side JSON download, `exportMyData`), a guardian
 **"remove child" soft-archive** (`children.archived_at` — deliberately not a hard delete,
 to avoid breaking the non-negotiable audit trail for a child who was actually checked in),

@@ -18,6 +18,7 @@ export async function adminCreateStaff(input: {
   phone?: string;
   roomIds?: string[];
   consentConfirmed: boolean;
+  role?: "staff" | "admin";
 }): Promise<{ id: string }> {
   const { data, error } = await supabase.functions.invoke("admin-create-staff", { body: input });
   if (error) {

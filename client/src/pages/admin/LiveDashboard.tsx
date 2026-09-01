@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { adminOverrideCheckout, getLiveSessions } from "../../lib/rpc";
 import { listRooms } from "../../lib/data";
+import { useAuth } from "../../context/AuthContext";
 import { useChannel } from "../../lib/useRealtime";
 import type { Room, Session } from "../../lib/types";
 import { Avatar } from "../../components/Avatar";
 import { StatusBadge } from "../../components/StatusBadge";
 
 export default function LiveDashboard() {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
 
@@ -20,7 +22,7 @@ export default function LiveDashboard() {
     load();
   }, [load]);
 
-  useChannel("admin", () => load());
+  useChannel(user ? `admin:${user.orgId}` : null, () => load());
 
   async function manualOverride(sessionId: string, childName: string) {
     const reason = window.prompt(
