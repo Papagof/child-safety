@@ -131,8 +131,7 @@ guardian **data export** (client-side JSON download, `exportMyData`), a guardian
 **"remove child" soft-archive** (`children.archived_at` — deliberately not a hard delete,
 to avoid breaking the non-negotiable audit trail for a child who was actually checked in),
 **admin data-retention purge** (`purge_old_records`, terminal-status sessions only, never
-active ones), **staff auto-lock** (sign-out after 5 idle minutes, `lib/useIdleLock.ts`), and
-a persistent **notification inbox** (spec §9 — `public.notifications`, bell icon in
+active ones), and a persistent **notification inbox** (spec §9 — `public.notifications`, bell icon in
 `components/NotificationBell.tsx`). Every check-in/checkout lifecycle RPC
 (`request_checkin`/`accept_checkin`/`decline_checkin`/`request_checkout`/`approve_checkout`)
 now also calls the internal `create_notification`/`notify_room_staff` helpers so a code
@@ -150,8 +149,13 @@ SMS escalation (Twilio) is not wired up — `escalate_unread_urgent_messages()` 
 no external SMS send. There's no offline-sync engine — the printed tag/stub covers "phone
 is dead," not "venue has no connectivity at all." Background-check integration is a manual
 admin-set status field, not a third-party API. The notification inbox has no Web Push —
-it only surfaces once the app is reopened, no OS-level push while closed. These are
-documented follow-ups, not oversights.
+it only surfaces once the app is reopened, no OS-level push while closed. There's no
+staff idle auto-sign-out — a build of this app once had one (5 idle minutes, matching
+spec §6's "a left-open tablet shouldn't be usable to fraudulently approve a pickup"), but
+it was deliberately removed at the user's request: staff now stay signed in until they sign
+out manually. If this app is ever deployed on a shared/public tablet rather than each
+staff member's own phone, that tradeoff is worth revisiting. These are documented
+follow-ups, not oversights.
 
 Two Supabase Auth settings need a manual toggle in Studio that no available tool covers:
 email-confirmation-required (currently on — blocks instant signup, and its mailer has a

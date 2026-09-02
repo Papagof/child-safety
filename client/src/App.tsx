@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { useIdleLock } from "./lib/useIdleLock";
 import { RequireRole } from "./components/RequireRole";
 import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
@@ -53,11 +52,6 @@ function RoleRedirect() {
 }
 
 export default function App() {
-  const { user, logout } = useAuth();
-  useIdleLock(user?.role === "staff", () => {
-    logout();
-  });
-
   return (
     <Routes>
       <Route path="/" element={<RoleRedirect />} />
