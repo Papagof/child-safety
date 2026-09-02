@@ -812,6 +812,16 @@ export type Database = {
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: { Args: { p_id: string }; Returns: undefined }
       mark_thread_read: { Args: { p_session_id: string }; Returns: undefined }
+      notify_org_admins: {
+        Args: {
+          p_body: string
+          p_org_id: string
+          p_session_id?: string
+          p_title: string
+          p_type: string
+        }
+        Returns: undefined
+      }
       notify_room_staff: {
         Args: {
           p_body: string
