@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { listNotifications, markAllNotificationsRead, markNotificationRead } from "../lib/rpc";
+import { acceptCheckin, approveCheckout, declineCheckin, listNotifications, markAllNotificationsRead, markNotificationRead } from "../lib/rpc";
 import { useAuth } from "../context/AuthContext";
 import { useChannel } from "../lib/useRealtime";
+import { RpcError } from "../lib/supabase";
 import type { AppNotification } from "../lib/types";
 
 function timeAgo(iso: string): string {
@@ -14,10 +15,85 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+// Lets staff act on a check-in/pickup request right from the notification —
+// still requires asking whoever is there for the code and typing it in, the
+// same as the dashboard flow. This is a shortcut to that action, never a way
+// to skip it: the code is never included in the notification itself (see
+// notify_room_staff/notify_org_admins — only a description, no code), and
+// admins get the identical notification with no action controls at all,
+// since only staff assigned to the room can call accept_checkin/approve_checkout.
+function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<"accepted" | "declined" | "approved" | null>(null);
+
+  if (done) {
+    const label = done === "accepted" ? "Checked in" : done === "approved" ? "Pickup confirmed" : "Declined";
+    return <p className="text-xs text-emerald-700 font-medium mt-1.5">{label} ✓</p>;
+  }
+
+  async function run(action: () => Promise<{ error?: string } | unknown>, onSuccess: "accepted" | "declined" | "approved") {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await action();
+      if (result && typeof result === "object" && (result as any).error === "code_mismatch") {
+        setError("Code does not match — please try again.");
+        return;
+      }
+      setDone(onSuccess);
+      onActed();
+    } catch (err) {
+      setError(err instanceof RpcError ? err.message : "Action failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+      <div className="flex gap-1.5">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder={n.type === "checkout_requested" ? "Pickup code" : "Check-in code"}
+          className="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1 text-xs font-mono tracking-widest uppercase"
+        />
+        <button
+          disabled={busy || !code}
+          onClick={() =>
+            n.type === "checkout_requested"
+              ? run(() => approveCheckout(n.sessionId!, code), "approved")
+              : run(() => acceptCheckin(n.sessionId!, code), "accepted")
+          }
+          className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded px-2 py-1 disabled:opacity-50 shrink-0"
+        >
+          {n.type === "checkout_requested" ? "Confirm" : "Accept"}
+        </button>
+      </div>
+      {n.type === "checkin_requested" && (
+        <button
+          disabled={busy}
+          onClick={() => {
+            const reason = window.prompt("Reason for declining (optional):") ?? "";
+            run(() => declineCheckin(n.sessionId!, reason), "declined");
+          }}
+          className="text-xs text-red-600 font-medium"
+        >
+          Decline
+        </button>
+      )}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   async function load() {
@@ -42,12 +118,15 @@ export function NotificationBell() {
   if (!user) return null;
 
   const unreadCount = notifications.filter((n) => !n.readAt).length;
+  const isActionable = (n: AppNotification) =>
+    user.role === "staff" && n.sessionId && (n.type === "checkin_requested" || n.type === "checkout_requested");
 
   async function onOpenNotification(n: AppNotification) {
     if (!n.readAt) {
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)));
       await markNotificationRead(n.id);
     }
+    if (isActionable(n)) setExpandedId((prev) => (prev === n.id ? null : n.id));
   }
 
   async function onMarkAllRead() {
@@ -86,17 +165,18 @@ export function NotificationBell() {
             <p className="text-sm text-slate-400 px-3 py-6 text-center">No notifications yet.</p>
           ) : (
             notifications.map((n) => (
-              <button
+              <div
                 key={n.id}
                 onClick={() => onOpenNotification(n)}
-                className={`block w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 ${
+                className={`w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 cursor-pointer ${
                   n.readAt ? "bg-white" : "bg-brand-50"
                 }`}
               >
                 <p className="text-sm font-medium text-slate-800">{n.title}</p>
                 {n.body && <p className="text-xs text-slate-500 mt-0.5">{n.body}</p>}
                 <p className="text-[11px] text-slate-400 mt-1">{timeAgo(n.createdAt)}</p>
-              </button>
+                {expandedId === n.id && isActionable(n) && <NotificationActions n={n} onActed={load} />}
+              </div>
             ))
           )}
         </div>
