@@ -713,6 +713,10 @@ export type Database = {
         Args: { p_reason: string; p_session_id: string }
         Returns: Json
       }
+      admin_set_child_room: {
+        Args: { p_child_id: string; p_room_id?: string }
+        Returns: Json
+      }
       age_from_dob: { Args: { p_dob: string }; Returns: number }
       approve_checkout: {
         Args: { p_code: string; p_session_id: string }

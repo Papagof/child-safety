@@ -100,6 +100,10 @@ export function transferSession(sessionId: string, newRoomId: string) {
   return rpc<{ oldSession: Session; newSession: Session }>("transfer_session", { p_session_id: sessionId, p_new_room_id: newRoomId });
 }
 
+export function adminSetChildRoom(childId: string, roomId: string | null) {
+  return rpc<{ id: string; defaultRoomId: string | null }>("admin_set_child_room", { p_child_id: childId, p_room_id: roomId });
+}
+
 export function adminOverrideCheckout(sessionId: string, reason: string) {
   return rpc<{ session: Session }>("admin_override_checkout", { p_session_id: sessionId, p_reason: reason });
 }

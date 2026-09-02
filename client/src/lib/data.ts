@@ -240,6 +240,19 @@ export async function searchChildrenForAdmin(query: string): Promise<{ id: strin
   return (data ?? []).map((c: any) => ({ id: c.id, fullName: c.full_name }));
 }
 
+// Admin roster view: every active (non-archived) child in the org, with
+// their guardian's name, for reassigning which room/class a child defaults
+// to (admin_set_child_room RPC does the actual write — audited, org-checked).
+export async function listChildrenForAdmin(): Promise<(Child & { guardianName: string })[]> {
+  const { data, error } = await supabase
+    .from("children")
+    .select("*, profiles!children_guardian_id_fkey(full_name)")
+    .is("archived_at", null)
+    .order("full_name");
+  if (error) throw error;
+  return (data ?? []).map((c: any) => ({ ...mapChild(c), guardianName: c.profiles?.full_name ?? "—" }));
+}
+
 // Guardian data export (spec.md §6's "clear controls for a parent to view/
 // export... their child's data") — pure client-side aggregation of reads the
 // guardian already has, no new RPC needed. Triggers a browser download.

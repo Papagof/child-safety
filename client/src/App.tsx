@@ -16,6 +16,7 @@ import SessionStatus from "./pages/guardian/SessionStatus";
 import History from "./pages/guardian/History";
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffApprovals from "./pages/admin/StaffApprovals";
+import Children from "./pages/admin/Children";
 import Rooms from "./pages/admin/Rooms";
 import LiveDashboard from "./pages/admin/LiveDashboard";
 import AuditLog from "./pages/admin/AuditLog";
@@ -34,6 +35,7 @@ const STAFF_LINKS = [{ to: "/staff", label: "Room dashboard" }];
 const ADMIN_LINKS = [
   { to: "/admin/live", label: "Live dashboard" },
   { to: "/admin/staff", label: "Staff" },
+  { to: "/admin/children", label: "Children" },
   { to: "/admin/rooms", label: "Rooms" },
   { to: "/admin/incidents", label: "Incidents" },
   { to: "/admin/audit", label: "Audit log" },
@@ -162,6 +164,16 @@ export default function App() {
           <RequireRole role="admin">
             <Layout links={ADMIN_LINKS}>
               <StaffApprovals />
+            </Layout>
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/children"
+        element={
+          <RequireRole role="admin">
+            <Layout links={ADMIN_LINKS}>
+              <Children />
             </Layout>
           </RequireRole>
         }
