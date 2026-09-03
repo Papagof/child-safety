@@ -87,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) {
         // No profile row yet — either mid-signup with email confirmation
         // pending, or the confirmation link was just clicked and this is the
-        // first session afterward. Finish complete_signup() now if we saved
-        // the role/name for this email before the confirmation redirect.
+        // first session afterward. Finish creating/joining the org now if we
+        // saved the choice for this email before the confirmation redirect.
         const pending = readPendingSignup(session.user.email ?? "");
         if (pending) {
           if (pending.modeArgs.mode === "create") {

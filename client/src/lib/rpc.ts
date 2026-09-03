@@ -4,7 +4,7 @@ import type { AppNotification, AttendanceReportRow, AuditEntry, ChatMessage, Inc
 // update_pickup_person returns the raw `pickup_people` row (snake_case
 // columns) rather than a hand-built jsonb object like every other RPC —
 // mapped here rather than in every call site.
-function mapPickupPerson(row: any): PickupPerson {
+export function mapPickupPerson(row: any): PickupPerson {
   return {
     id: row.id,
     fullName: row.full_name,

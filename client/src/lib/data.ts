@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { getMyProfile, getMySessions, listAuditLogRpc, updateMyPhoto } from "./rpc";
+import { getMyProfile, getMySessions, listAuditLogRpc, mapPickupPerson, updateMyPhoto } from "./rpc";
 import type { AuditEntry, Child, Incident, PickupPerson, Room } from "./types";
 
 // Plain RLS-gated table reads/writes for the non-safety-critical resources
@@ -136,13 +136,6 @@ export async function myPickupPeople(childId: string): Promise<PickupPerson[]> {
   const { data, error } = await supabase.from("pickup_people").select("*").eq("child_id", childId).order("created_at");
   if (error) throw error;
   return (data ?? []).map(mapPickupPerson);
-}
-
-function mapPickupPerson(p: any): PickupPerson {
-  return {
-    id: p.id, fullName: p.full_name, photoUrl: p.photo_url, relationship: p.relationship,
-    idReference: p.id_reference, status: p.status, blockedReason: p.blocked_reason, createdAt: p.created_at,
-  };
 }
 
 export async function addPickupPerson(childId: string, input: { fullName: string; relationship: string; idReference?: string }) {
