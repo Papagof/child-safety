@@ -11,6 +11,7 @@ export default function Children() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   async function load() {
     const [c, r] = await Promise.all([listChildrenForAdmin(), listRooms()]);
@@ -35,6 +36,11 @@ export default function Children() {
 
   if (loading) return <p className="text-slate-400">Loading…</p>;
 
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? children.filter((c) => c.fullName.toLowerCase().includes(q) || c.guardianName.toLowerCase().includes(q))
+    : children;
+
   return (
     <div className="max-w-3xl mx-auto space-y-3">
       <h1 className="text-xl font-bold text-slate-800">Children</h1>
@@ -42,8 +48,15 @@ export default function Children() {
         Move a child to a different class/room — e.g. when they age up. This changes which room they're suggested
         for at check-in; it doesn't affect any session already in progress.
       </p>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by child or guardian name…"
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
       {children.length === 0 && <p className="text-slate-400">No children registered yet.</p>}
-      {children.map((child) => (
+      {children.length > 0 && filtered.length === 0 && <p className="text-slate-400">No children match "{query}".</p>}
+      {filtered.map((child) => (
         <div key={child.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3">
           <Avatar src={child.photoUrl} name={child.fullName} size={44} />
           <div className="flex-1 min-w-0">
