@@ -172,8 +172,10 @@ export function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const [dropdownTop, setDropdownTop] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   async function load() {
     setNotifications(await listNotifications());
@@ -213,10 +215,25 @@ export function NotificationBell() {
     await markAllNotificationsRead();
   }
 
+  // Anchored to the viewport (fixed + a measured top), not to this button's
+  // own bounding box (absolute + right-0) — the bell isn't the last item in
+  // the header's right-side group (avatar/logout come after it), so
+  // anchoring the dropdown's right edge to the bell's own edge pushed it
+  // left of the true screen edge on a narrow phone. Pinning it to the
+  // viewport's right margin instead keeps it on-screen regardless of where
+  // the bell sits in the row.
+  function toggleOpen() {
+    if (!open && buttonRef.current) {
+      setDropdownTop(buttonRef.current.getBoundingClientRect().bottom + 8);
+    }
+    setOpen((v) => !v);
+  }
+
   return (
     <div className="relative" ref={rootRef}>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={buttonRef}
+        onClick={toggleOpen}
         aria-label="Notifications"
         className="relative text-brand-100 hover:text-white border border-white/20 rounded-lg p-2"
       >
@@ -231,7 +248,10 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-white text-slate-800 border border-slate-200 rounded-xl shadow-lg z-50">
+        <div
+          style={{ top: dropdownTop }}
+          className="fixed right-4 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-white text-slate-800 border border-slate-200 rounded-xl shadow-lg z-50"
+        >
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
             <p className="text-sm font-semibold">Notifications</p>
             {unreadCount > 0 && (
