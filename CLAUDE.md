@@ -164,14 +164,44 @@ clear error instead of silently trying the wrong code. Wired into both the staff
 dashboard's `CodeAction` and the notification-inline accept/confirm flow; manual entry
 remains the fallback (no camera permission, damaged screen, etc.).
 
+**Web Push** (closes the "no OS-level push while closed" gap below): `public.push_subscriptions`
+(`0053_push_subscriptions.sql`) holds one row per browser/device — non-safety-critical
+plumbing, so it's plain RLS-gated direct client writes (`lib/push.ts`'s `enablePushNotifications()`),
+not an RPC. Actually sending a push needs real crypto (VAPID JWT signing, payload encryption)
+that doesn't exist in PL/pgSQL, so it happens in a new Edge Function, `send-push`
+(`supabase/functions/send-push/`), triggered by a **Database Webhook** on `notifications`'
+`AFTER INSERT` (configured in Studio, not SQL — see the setup checklist below) rather than a
+trigger function, reusing the exact same `create_notification()` call sites that already
+populate the in-app inbox. `send-push` isn't JWT-verified (deployed with `--no-verify-jwt`,
+since the caller is Supabase's webhook system, not a user) — instead it checks a shared
+`x-webhook-secret` header the webhook is configured to send, so the URL alone can't be used
+to push arbitrary notifications to an arbitrary user. `client/public/sw.js` is a minimal
+service worker (push + notificationclick only — no fetch interception, so this adds no
+offline behavior, that's still a separate gap).
+
+**One-time setup this needs** (none of this is done yet as of writing — Supabase's MCP
+tools weren't loaded in the session that built this feature, so it could only be coded, not
+deployed):
+1. Generate a VAPID key pair (`npx web-push generate-vapid-keys`).
+2. `supabase functions deploy send-push --no-verify-jwt` (or paste `index.ts` into the
+   Studio Edge Functions editor).
+3. Set three secrets on the function (Studio: Functions → send-push → Secrets, or
+   `supabase secrets set`): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `WEBHOOK_SECRET` (any
+   random string you invent — it just has to match step 4's header).
+4. Studio → Database → Webhooks → create one: table `notifications`, event `INSERT`, HTTP
+   request to the `send-push` function's URL, with a custom header
+   `x-webhook-secret: <the same value as WEBHOOK_SECRET>`.
+5. Add `VITE_VAPID_PUBLIC_KEY=<the public key from step 1>` to `client/.env` **and** to
+   Vercel's project environment variables, then redeploy the client.
+6. Apply `0053_push_subscriptions.sql` (Studio SQL editor, same as `0052`).
+
 ## Known intentional gaps in this prototype
 
 SMS escalation (Twilio) is not wired up — `escalate_unread_urgent_messages()` (run by
 `pg_cron` every minute) only creates an `incidents` row and an `admin` realtime broadcast,
 no external SMS send. There's no offline-sync engine — the printed tag/stub covers "phone
 is dead," not "venue has no connectivity at all." Background-check integration is a manual
-admin-set status field, not a third-party API. The notification inbox has no Web Push —
-it only surfaces once the app is reopened, no OS-level push while closed. There's no
+admin-set status field, not a third-party API. There's no
 staff idle auto-sign-out — a build of this app once had one (5 idle minutes, matching
 spec §6's "a left-open tablet shouldn't be usable to fraudulently approve a pickup"), but
 it was deliberately removed at the user's request: staff now stay signed in until they sign

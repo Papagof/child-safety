@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useChannel } from "../lib/useRealtime";
 import { RpcError } from "../lib/supabase";
 import { parseScannedCode, QRScanner } from "./QRScanner";
+import { enablePushNotifications, isPushEnabled, isPushSupported } from "../lib/push";
 import type { AppNotification } from "../lib/types";
 
 function timeAgo(iso: string): string {
@@ -121,6 +122,52 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
   );
 }
 
+// Shown while this device hasn't opted into Web Push yet — a shortcut to
+// enablePushNotifications() (lib/push.ts), never a requirement: the in-app
+// inbox above still works with no push at all, this only adds an OS-level
+// alert while the app/tab is closed. Hidden entirely on an unsupported
+// browser or once already enabled, so it only ever appears when it's
+// actually actionable.
+function PushBanner() {
+  const [visible, setVisible] = useState(false);
+  const [status, setStatus] = useState<"idle" | "busy" | "denied" | "enabled">("idle");
+
+  useEffect(() => {
+    (async () => {
+      if ((await isPushSupported()) && !(await isPushEnabled())) setVisible(true);
+    })();
+  }, []);
+
+  if (!visible || status === "enabled") return null;
+
+  return (
+    <div className="px-3 py-2 border-b border-slate-100 bg-brand-50 text-xs text-brand-800 flex items-center justify-between gap-2">
+      {status === "denied" ? (
+        <span>Notifications blocked — enable them in your browser's site settings.</span>
+      ) : (
+        <>
+          <span>Get notified even when the app is closed.</span>
+          <button
+            disabled={status === "busy"}
+            onClick={async () => {
+              setStatus("busy");
+              try {
+                const result = await enablePushNotifications();
+                setStatus(result === "enabled" ? "enabled" : result === "denied" ? "denied" : "idle");
+              } catch {
+                setStatus("idle");
+              }
+            }}
+            className="font-semibold text-brand-700 shrink-0 disabled:opacity-50"
+          >
+            {status === "busy" ? "Enabling…" : "Enable"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -193,6 +240,7 @@ export function NotificationBell() {
               </button>
             )}
           </div>
+          <PushBanner />
           {notifications.length === 0 ? (
             <p className="text-sm text-slate-400 px-3 py-6 text-center">No notifications yet.</p>
           ) : (

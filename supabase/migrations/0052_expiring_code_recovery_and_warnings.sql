@@ -28,8 +28,8 @@
 -- columns make each warning fire at most once per code.
 
 alter table public.sessions
-  add column checkin_expiry_warned boolean not null default false,
-  add column checkout_expiry_warned boolean not null default false;
+  add column if not exists checkin_expiry_warned boolean not null default false,
+  add column if not exists checkout_expiry_warned boolean not null default false;
 
 create or replace function public.expire_stale_codes()
 returns void

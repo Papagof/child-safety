@@ -68,6 +68,7 @@ run migrations.
    ```
    VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
    VITE_SUPABASE_ANON_KEY=<your-anon-key>
+   VITE_VAPID_PUBLIC_KEY=<optional — enables Web Push, see CLAUDE.md>
    ```
 
 4. In Supabase Auth settings, decide whether to require email confirmation
