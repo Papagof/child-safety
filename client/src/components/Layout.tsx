@@ -10,19 +10,19 @@ export function Layout({ links, children }: { links: { to: string; label: string
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-brand-900 text-white">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="leading-tight">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="leading-tight shrink-0">
               <span className="font-bold text-lg tracking-tight block">Shmeera</span>
-              {user?.orgName && <span className="text-xs text-brand-200 block">{user.orgName}</span>}
+              {user?.orgName && <span className="text-xs text-brand-200 block truncate max-w-[140px]">{user.orgName}</span>}
             </div>
-            <nav className="flex gap-1">
+            <nav className="flex gap-1 min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {links.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                    `shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                       isActive ? "bg-white/15 text-white" : "text-brand-100 hover:bg-white/10"
                     }`
                   }
@@ -32,7 +32,7 @@ export function Layout({ links, children }: { links: { to: string; label: string
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <NotificationBell />
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium leading-tight">{user?.fullName}</p>
