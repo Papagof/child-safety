@@ -18,6 +18,19 @@ export async function isPushSupported(): Promise<boolean> {
   return "serviceWorker" in navigator && "PushManager" in window && !!VAPID_PUBLIC_KEY;
 }
 
+// iOS Safari (and Chrome/Firefox for iOS, which are WebKit under the hood)
+// only expose the Push API to a site running as an installed Home Screen
+// app (iOS 16.4+) — a plain browser tab has no PushManager at all, so
+// isPushSupported() above correctly returns false there. That reads as a
+// silent, confusing dead end to a phone user with no other explanation, so
+// the "not supported, but here's why + how to fix it" case gets its own
+// check to drive a specific hint instead of just hiding the banner.
+export function isIosSafariNotInstalled(): boolean {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = (navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  return isIos && !isStandalone;
+}
+
 export async function isPushEnabled(): Promise<boolean> {
   if (!(await isPushSupported())) return false;
   const registration = await navigator.serviceWorker.getRegistration();

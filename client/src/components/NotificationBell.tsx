@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useChannel } from "../lib/useRealtime";
 import { RpcError } from "../lib/supabase";
 import { parseScannedCode, QRScanner } from "./QRScanner";
-import { enablePushNotifications, isPushEnabled, isPushSupported } from "../lib/push";
+import { enablePushNotifications, isIosSafariNotInstalled, isPushEnabled, isPushSupported } from "../lib/push";
 import type { AppNotification } from "../lib/types";
 
 function timeAgo(iso: string): string {
@@ -130,15 +130,28 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
 // actually actionable.
 function PushBanner() {
   const [visible, setVisible] = useState(false);
+  const [needsInstall, setNeedsInstall] = useState(false);
   const [status, setStatus] = useState<"idle" | "busy" | "denied" | "enabled">("idle");
 
   useEffect(() => {
     (async () => {
-      if ((await isPushSupported()) && !(await isPushEnabled())) setVisible(true);
+      if (await isPushSupported()) {
+        if (!(await isPushEnabled())) setVisible(true);
+      } else if (isIosSafariNotInstalled()) {
+        setNeedsInstall(true);
+      }
     })();
   }, []);
 
-  if (!visible || status === "enabled") return null;
+  if ((!visible && !needsInstall) || status === "enabled") return null;
+
+  if (needsInstall) {
+    return (
+      <div className="px-3 py-2 border-b border-slate-100 bg-brand-50 text-xs text-brand-800">
+        For notifications on iPhone: tap Share, then "Add to Home Screen," and open Shmeera from there.
+      </div>
+    );
+  }
 
   return (
     <div className="px-3 py-2 border-b border-slate-100 bg-brand-50 text-xs text-brand-800 flex items-center justify-between gap-2">
