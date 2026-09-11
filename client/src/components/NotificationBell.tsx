@@ -3,6 +3,7 @@ import { acceptCheckin, approveCheckout, declineCheckin, listNotifications, mark
 import { useAuth } from "../context/AuthContext";
 import { useChannel } from "../lib/useRealtime";
 import { RpcError } from "../lib/supabase";
+import { parseScannedCode, QRScanner } from "./QRScanner";
 import type { AppNotification } from "../lib/types";
 
 function timeAgo(iso: string): string {
@@ -27,6 +28,7 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<"accepted" | "declined" | "approved" | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   if (done) {
     const label = done === "accepted" ? "Checked in" : done === "approved" ? "Pickup confirmed" : "Declined";
@@ -51,6 +53,24 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
     }
   }
 
+  function handleDetect(value: string) {
+    setScanning(false);
+    const parsed = parseScannedCode(value);
+    if (!parsed) {
+      setError("That doesn't look like a Shmeera code — try again or type it manually.");
+      return;
+    }
+    if (parsed.sessionId !== n.sessionId) {
+      setError("That QR is for a different child's session — try again.");
+      return;
+    }
+    setError(null);
+    setCode(parsed.code);
+    n.type === "checkout_requested"
+      ? run(() => approveCheckout(n.sessionId!, parsed.code), "approved")
+      : run(() => acceptCheckin(n.sessionId!, parsed.code), "accepted");
+  }
+
   return (
     <div className="mt-1.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
       <div className="flex gap-1.5">
@@ -60,6 +80,17 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
           placeholder={n.type === "checkout_requested" ? "Pickup code" : "Check-in code"}
           className="flex-1 min-w-0 rounded border border-slate-300 px-2 py-1 text-xs font-mono tracking-widest uppercase"
         />
+        <button
+          disabled={busy}
+          onClick={() => setScanning(true)}
+          title="Scan QR instead"
+          aria-label="Scan QR instead"
+          className="shrink-0 border border-slate-300 rounded px-1.5 text-slate-500"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+            <path d="M4 4h6v6H4V4Zm2 2v2h2V6H6ZM4 14h6v6H4v-6Zm2 2v2h2v-2H6Zm8-12h6v6h-6V4Zm2 2v2h2V6h-2ZM14 14h2v2h-2v-2Zm4 0h2v2h-2v-2Zm-4 4h2v2h-2v-2Zm4 0h2v2h-2v-2Z" />
+          </svg>
+        </button>
         <button
           disabled={busy || !code}
           onClick={() =>
@@ -72,6 +103,7 @@ function NotificationActions({ n, onActed }: { n: AppNotification; onActed: () =
           {n.type === "checkout_requested" ? "Confirm" : "Accept"}
         </button>
       </div>
+      {scanning && <QRScanner onClose={() => setScanning(false)} onDetect={handleDetect} />}
       {n.type === "checkin_requested" && (
         <button
           disabled={busy}

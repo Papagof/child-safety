@@ -142,6 +142,28 @@ can read after reopening the app, not just a realtime broadcast to an open tab. 
 the only client-facing surface; `create_notification`/`notify_room_staff` are internal-only
 (explicitly revoked from `anon`/`authenticated` — see the 0017-style stray-grant note below).
 
+A full-project audit (see migration `0052`) found two related gaps and closed both: spec
+§9's **code-expiring-soon warning** was never implemented (`warn_expiring_codes`, `pg_cron`
+every 5 min, notifies the guardian once — `checkin_expiry_warned`/`checkout_expiry_warned`
+columns keep it from repeating), and a real dead end — a `pending_checkin`/`pending_checkout`
+session whose code expired before staff acted on it had no automatic recovery, leaving the
+family stuck (the "one active session per child per day" unique index blocked a retry, and
+`request_checkout` requires `status = 'checked_in'`). `expire_stale_codes` (same cron cadence)
+now auto-declines a stale check-in (identical end state to a staff decline — no client change
+needed) and reverts a stale checkout back to `checked_in` with the stale code fields cleared,
+so the guardian can simply try again; both notify the guardian and write an `audit_log` row.
+
+**Camera QR scanning for staff** (`components/QRScanner.tsx`, `jsqr`): spec §4.3/§8 called for
+scanning the guardian's QR, but staff previously always typed the code by hand even though
+`QRCodeBlock`/`PrintableTag` already render one. Scanning is purely a faster way to *enter*
+the same code — it goes through the exact same `accept_checkin`/`approve_checkout` RPC as
+manual entry, which independently verifies it server-side, so the two-sided-confirmation
+model is unchanged. A scanned QR's embedded session id is checked against the card's own
+session before auto-submitting, so scanning the wrong family's screen in a crowd surfaces a
+clear error instead of silently trying the wrong code. Wired into both the staff room
+dashboard's `CodeAction` and the notification-inline accept/confirm flow; manual entry
+remains the fallback (no camera permission, damaged screen, etc.).
+
 ## Known intentional gaps in this prototype
 
 SMS escalation (Twilio) is not wired up — `escalate_unread_urgent_messages()` (run by

@@ -8,32 +8,71 @@ import type { Room, Session } from "../../lib/types";
 import { Avatar } from "../../components/Avatar";
 import { StatusBadge } from "../../components/StatusBadge";
 import { ChatPanel } from "../../components/ChatPanel";
+import { parseScannedCode, QRScanner } from "../../components/QRScanner";
 
 function CodeAction({
+  sessionId,
   placeholder,
   onSubmit,
   busy,
 }: {
+  sessionId: string;
   placeholder: string;
   onSubmit: (code: string) => void;
   busy: boolean;
 }) {
   const [code, setCode] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  function handleDetect(value: string) {
+    setScanning(false);
+    const parsed = parseScannedCode(value);
+    if (!parsed) {
+      setScanError("That doesn't look like a Shmeera code — try again or type it manually.");
+      return;
+    }
+    if (parsed.sessionId !== sessionId) {
+      setScanError("That QR is for a different child's session — try again.");
+      return;
+    }
+    setScanError(null);
+    setCode(parsed.code);
+    onSubmit(parsed.code);
+  }
+
   return (
-    <div className="flex gap-2">
-      <input
-        value={code}
-        onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder={placeholder}
-        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono tracking-widest uppercase"
-      />
-      <button
-        disabled={busy || !code}
-        onClick={() => onSubmit(code)}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
-      >
-        Confirm
-      </button>
+    <div className="space-y-1.5">
+      <div className="flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder={placeholder}
+          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono tracking-widest uppercase"
+        />
+        <button
+          onClick={() => {
+            setScanError(null);
+            setScanning(true);
+          }}
+          title="Scan QR instead"
+          aria-label="Scan QR instead"
+          className="shrink-0 border border-slate-300 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+            <path d="M4 4h6v6H4V4Zm2 2v2h2V6H6ZM4 14h6v6H4v-6Zm2 2v2h2v-2H6Zm8-12h6v6h-6V4Zm2 2v2h2V6h-2ZM14 14h2v2h-2v-2Zm4 0h2v2h-2v-2Zm-4 4h2v2h-2v-2Zm4 0h2v2h-2v-2Z" />
+          </svg>
+        </button>
+        <button
+          disabled={busy || !code}
+          onClick={() => onSubmit(code)}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
+        >
+          Confirm
+        </button>
+      </div>
+      {scanError && <p className="text-xs text-red-600">{scanError}</p>}
+      {scanning && <QRScanner onClose={() => setScanning(false)} onDetect={handleDetect} />}
     </div>
   );
 }
@@ -136,7 +175,7 @@ function SessionCard({ session, rooms, onChange }: { session: Session; rooms: Ro
               Accept transfer
             </button>
           ) : (
-            <CodeAction placeholder="Check-in code" busy={busy} onSubmit={(code) => run(() => acceptCheckin(session.id, code))} />
+            <CodeAction sessionId={session.id} placeholder="Check-in code" busy={busy} onSubmit={(code) => run(() => acceptCheckin(session.id, code))} />
           )}
           <button
             onClick={() => {
@@ -187,6 +226,7 @@ function SessionCard({ session, rooms, onChange }: { session: Session; rooms: Ro
           </div>
           <p className="text-xs text-slate-500">Ask this adult for the pickup code and confirm it matches.</p>
           <CodeAction
+            sessionId={session.id}
             placeholder="Pickup code"
             busy={busy}
             onSubmit={(code) => run(() => approveCheckout(session.id, code))}
