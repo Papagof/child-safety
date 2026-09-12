@@ -6,6 +6,10 @@ import type { ReactNode } from "react";
 
 export function Layout({ links, children }: { links: { to: string; label: string }[]; children: ReactNode }) {
   const { user, logout } = useAuth();
+  // Orthogonal to role (see 0054_developer_role.sql) — added here, once,
+  // rather than to every LINKS constant/route in App.tsx, so it shows up no
+  // matter which role's dashboard a developer is currently viewing.
+  const allLinks = user?.isDeveloper ? [...links, { to: "/developer", label: "Platform" }] : links;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -35,7 +39,7 @@ export function Layout({ links, children }: { links: { to: string; label: string
             and several links (admin) get a dedicated horizontal-scroll area
             instead of being squeezed by whatever else is in the header. */}
         <nav className="max-w-5xl mx-auto px-4 pb-3 pt-2 flex gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {links.map((l) => (
+          {allLinks.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}

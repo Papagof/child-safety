@@ -111,6 +111,20 @@ get its own `org_id` column set explicitly by whichever RPC creates the row, val
 against the org of whatever it's attached to (room/session/etc.) — don't assume a foreign
 key alone proves same-org.
 
+**The one deliberate exception**: `profiles.is_developer` (`0054_developer_role.sql`) is a
+platform-operator flag that sits *above* the multi-tenancy boundary — a developer account can
+see every church, and can activate/deactivate any of them (`list_organizations_for_developer`/
+`set_organization_active`, `pages/developer/Developer.tsx`), which no church's own admin
+should ever be able to do to another church. It's orthogonal to `role` (still `guardian`/
+`staff`/`admin` underneath) rather than a 4th role value, and there is no signup path or admin
+action that can set it — only a direct `update profiles set is_developer = true` by whoever
+controls the Supabase project. Deactivation is enforced in exactly one place:
+`get_my_org_id()` returns `null` for a deactivated org, which every existing org-scoped check
+already treats as not-found/unauthorized, so nothing else needed to change. `get_my_profile()`
+is the one function that deliberately does *not* route through `get_my_org_id()`, so it can
+still tell a deactivated org's own users *why* (`orgActive: false` — `RequireRole.tsx` shows a
+blocking screen instead of the normal dashboard) rather than a bare failure.
+
 ## Spec coverage beyond the core flows
 
 Also implemented, closing gaps `docs/spec.md` described that the original build never

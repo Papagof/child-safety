@@ -9,6 +9,8 @@ export interface User {
   phone?: string | null;
   orgId: string;
   orgName: string;
+  orgActive: boolean;
+  isDeveloper: boolean;
 }
 
 export interface Room {

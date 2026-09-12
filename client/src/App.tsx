@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { RequireRole } from "./components/RequireRole";
+import { RequireDeveloper, RequireRole } from "./components/RequireRole";
 import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -22,6 +22,7 @@ import AuditLog from "./pages/admin/AuditLog";
 import Incidents from "./pages/admin/Incidents";
 import Reports from "./pages/admin/Reports";
 import DataRetention from "./pages/admin/DataRetention";
+import Developer from "./pages/developer/Developer";
 
 const GUARDIAN_LINKS = [
   { to: "/guardian", label: "Dashboard" },
@@ -220,6 +221,17 @@ export default function App() {
               <DataRetention />
             </Layout>
           </RequireRole>
+        }
+      />
+
+      <Route
+        path="/developer"
+        element={
+          <RequireDeveloper>
+            <Layout links={[]}>
+              <Developer />
+            </Layout>
+          </RequireDeveloper>
         }
       />
 

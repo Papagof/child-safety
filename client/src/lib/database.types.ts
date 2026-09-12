@@ -368,18 +368,21 @@ export type Database = {
       }
       organizations: {
         Row: {
+          active: boolean
           created_at: string
           id: string
           invite_code: string
           name: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           id?: string
           invite_code: string
           name: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           id?: string
           invite_code?: string
@@ -447,6 +450,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_developer: boolean
           org_id: string
           phone: string | null
           photo_url: string | null
@@ -457,6 +461,7 @@ export type Database = {
           created_at?: string
           full_name: string
           id: string
+          is_developer?: boolean
           org_id: string
           phone?: string | null
           photo_url?: string | null
@@ -467,6 +472,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          is_developer?: boolean
           org_id?: string
           phone?: string | null
           photo_url?: string | null
@@ -807,6 +813,7 @@ export type Database = {
       get_unread_notification_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_approved_staff: { Args: never; Returns: boolean }
+      is_developer: { Args: never; Returns: boolean }
       is_staff_assigned_to_room: {
         Args: { p_room_id: string; p_staff_id: string }
         Returns: boolean
@@ -834,6 +841,7 @@ export type Database = {
         Returns: Json
       }
       list_notifications: { Args: { p_limit?: number }; Returns: Json }
+      list_organizations_for_developer: { Args: never; Returns: Json }
       list_sessions: {
         Args: {
           p_child_id?: string
@@ -900,6 +908,10 @@ export type Database = {
       }
       set_background_check_status: {
         Args: { p_status: string; p_user_id: string }
+        Returns: undefined
+      }
+      set_organization_active: {
+        Args: { p_active: boolean; p_org_id: string }
         Returns: undefined
       }
       set_staff_rooms: {

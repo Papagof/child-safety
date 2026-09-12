@@ -52,6 +52,8 @@ export interface MyProfile {
     photoUrl: string | null;
     orgId: string;
     orgName: string;
+    orgActive: boolean;
+    isDeveloper: boolean;
   };
   staff: {
     approvalStatus: "pending" | "approved" | "rejected";
@@ -259,4 +261,21 @@ export function markNotificationRead(id: string) {
 
 export function markAllNotificationsRead() {
   return rpc<void>("mark_all_notifications_read");
+}
+
+// --- developer (platform operator, cross-org) -------------------------------------------------
+export interface DeveloperOrg {
+  id: string;
+  name: string;
+  active: boolean;
+  createdAt: string;
+  childrenCount: number;
+}
+
+export function listOrganizationsForDeveloper() {
+  return rpc<DeveloperOrg[]>("list_organizations_for_developer");
+}
+
+export function setOrganizationActive(orgId: string, active: boolean) {
+  return rpc<void>("set_organization_active", { p_org_id: orgId, p_active: active });
 }
