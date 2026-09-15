@@ -1,0 +1,13 @@
+# SPA fallback for Apache/cPanel shared hosting (e.g. Hostinger) — the
+# equivalent of vercel.json's rewrite rule. Without this, refreshing a
+# client-side route like /guardian/session/:id 404s, since Apache looks for
+# an actual file/folder at that path and there isn't one; everything is
+# handled by React Router once index.html loads.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule . /index.html [L]
+</IfModule>
