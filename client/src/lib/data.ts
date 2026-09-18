@@ -39,6 +39,31 @@ export async function adminCreateStaff(input: {
   return data as { id: string };
 }
 
+// Admin-only: pushes a session's currently-active check-in/pickup code to
+// the guardian's own phone (Twilio SMS) and/or email (Resend). Runs as a
+// Supabase Edge Function (supabase/functions/send-code/) so the code is
+// fetched and dispatched entirely server-side — it's never returned here.
+export async function sendCodeExternally(
+  sessionId: string,
+  channels: ("sms" | "email")[]
+): Promise<{ sms?: { sent: boolean; error?: string }; email?: { sent: boolean; error?: string } }> {
+  const { data, error } = await supabase.functions.invoke("send-code", { body: { sessionId, channels } });
+  if (error) {
+    const context = (error as any).context;
+    let bodyMessage: string | undefined;
+    if (context && typeof context.json === "function") {
+      try {
+        const body = await context.json();
+        bodyMessage = body?.error;
+      } catch {
+        // response body wasn't JSON — fall through to the generic error
+      }
+    }
+    throw new Error(bodyMessage ?? error.message);
+  }
+  return data;
+}
+
 export async function listRooms(): Promise<Room[]> {
   const { data, error } = await supabase.from("rooms").select("*").order("name");
   if (error) throw error;

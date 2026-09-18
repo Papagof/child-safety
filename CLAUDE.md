@@ -209,11 +209,39 @@ deployed):
    Vercel's project environment variables, then redeploy the client.
 6. Apply `0053_push_subscriptions.sql` (Studio SQL editor, same as `0052`).
 
+**Admin-triggered code delivery by SMS/email**: an admin can push a session's
+currently-active check-in/pickup code straight to the guardian's own phone and email —
+for when the guardian isn't looking at the app (phone locked, noisy pickup line, etc.).
+`get_session_code_for_notify` (`0055_send_code_externally.sql`, security definer, checks
+`is_admin()` + org match, raises if the session has no active code) fetches the code
+server-side; a new Edge Function, `send-code` (`supabase/functions/send-code/`), calls it
+using the admin's own forwarded JWT, looks up the guardian's email via the service-role
+client (`profiles` has no email column — that's `auth.users`-owned), then sends the SMS via
+Twilio's REST API and the email via Resend. The code is never returned to the admin's
+browser — the function only ever responds with per-channel `{ sent, error? }`, and every
+attempt (success or failure, per channel) is logged to `audit_log` as
+`code_sent_externally`. This re-delivers a code through the exact same
+`accept_checkin`/`approve_checkout` RPC staff already use to redeem it — two-sided
+confirmation is unchanged, this is just an extra delivery path for a code that already
+exists. Wired into `pages/admin/LiveDashboard.tsx`'s `SendCodeControl`, shown on any
+`pending_checkin`/`pending_checkout` row.
+
+**Live as of this writing**: `0055_send_code_externally.sql` is applied, `send-code` is
+deployed (default JWT verification — the caller is always a signed-in admin, not a
+webhook), and its five secrets (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+`TWILIO_FROM_NUMBER`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`) are set on the function.
+Guardian phone numbers need to be in E.164 format (`+1...`) for Twilio to accept them —
+anything else surfaces as that channel's `error` in the admin UI rather than failing
+silently, so that's the first thing to check if SMS delivery ever comes back with an
+error for a specific guardian.
+
 ## Known intentional gaps in this prototype
 
-SMS escalation (Twilio) is not wired up — `escalate_unread_urgent_messages()` (run by
-`pg_cron` every minute) only creates an `incidents` row and an `admin` realtime broadcast,
-no external SMS send. There's no offline-sync engine — the printed tag/stub covers "phone
+SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired
+up — `escalate_unread_urgent_messages()` (run by `pg_cron` every minute) only creates an
+`incidents` row and an `admin` realtime broadcast, no external SMS send; Twilio is now
+used, but only for the separate admin-triggered code-delivery path above. There's no
+offline-sync engine — the printed tag/stub covers "phone
 is dead," not "venue has no connectivity at all." Background-check integration is a manual
 admin-set status field, not a third-party API. There's no
 staff idle auto-sign-out — a build of this app once had one (5 idle minutes, matching

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { adminOverrideCheckout, getLiveSessions, transferSession } from "../../lib/rpc";
-import { listRooms } from "../../lib/data";
+import { listRooms, sendCodeExternally } from "../../lib/data";
 import { useAuth } from "../../context/AuthContext";
 import { useChannel } from "../../lib/useRealtime";
 import type { Room, Session } from "../../lib/types";
@@ -60,6 +60,41 @@ function TransferControl({ session, rooms, onDone }: { session: Session; rooms: 
   );
 }
 
+function SendCodeControl({ session }: { session: Session }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setResult(null);
+    try {
+      const outcome = await sendCodeExternally(session.id, ["sms", "email"]);
+      const parts: string[] = [];
+      if (outcome.sms) parts.push(outcome.sms.sent ? "SMS sent" : `SMS failed: ${outcome.sms.error}`);
+      if (outcome.email) parts.push(outcome.email.sent ? "Email sent" : `Email failed: ${outcome.email.error}`);
+      setResult(parts.join(" · "));
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : "Could not send code");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-0.5 shrink-0">
+      <button
+        disabled={busy}
+        onClick={send}
+        className="text-xs font-medium text-brand-700 disabled:opacity-50"
+        title="Text and email this code to the guardian directly"
+      >
+        {busy ? "Sending…" : "Send code"}
+      </button>
+      {result && <span className="text-[11px] text-slate-400 text-right max-w-[12rem]">{result}</span>}
+    </div>
+  );
+}
+
 export default function LiveDashboard() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -106,6 +141,9 @@ export default function LiveDashboard() {
                     <p className="text-xs text-slate-400">Guardian: {s.child.guardianName}</p>
                   </div>
                   <StatusBadge status={s.status} />
+                  {(s.status === "pending_checkin" || s.status === "pending_checkout") && (
+                    <SendCodeControl session={s} />
+                  )}
                   {(s.status === "pending_checkin" || s.status === "checked_in") && (
                     <TransferControl session={s} rooms={rooms} onDone={load} />
                   )}
