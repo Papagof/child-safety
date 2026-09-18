@@ -28,7 +28,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <h1 className="text-xl font-bold text-brand-900 mb-1">Shmeera</h1>
-        <p className="text-sm text-slate-500 mb-6">Children's church check-in</p>
+        <p className="text-sm text-slate-500 mb-6">Child check-in & safety</p>
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
             <label className="text-sm font-medium text-slate-700">Email</label>

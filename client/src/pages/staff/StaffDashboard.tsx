@@ -356,7 +356,7 @@ export default function StaffDashboard() {
         <p className="text-lg font-semibold text-slate-800 mb-2">Welcome, {user?.fullName}</p>
         <p className="text-sm text-slate-500">
           {staff.approvalStatus === "rejected"
-            ? "Your staff account application was not approved. Please speak with your ministry admin."
+            ? "Your staff account application was not approved. Please speak with your organization's admin."
             : "Your staff account is pending admin approval. You'll be able to accept check-ins once approved."}
         </p>
       </div>

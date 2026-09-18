@@ -5,6 +5,7 @@ import { useAuth, type SignupMode } from "../context/AuthContext";
 export default function Signup() {
   const { user, signup } = useAuth();
   const [tab, setTab] = useState<"create" | "join">("create");
+  const [orgType, setOrgType] = useState<"church" | "school">("church");
   const [orgName, setOrgName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [fullName, setFullName] = useState("");
@@ -51,7 +52,7 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <h1 className="text-xl font-bold text-brand-900 mb-1">Create your account</h1>
-        <p className="text-sm text-slate-500 mb-4">Staff accounts are set up by your ministry admin.</p>
+        <p className="text-sm text-slate-500 mb-4">Staff accounts are set up by your organization's admin.</p>
 
         <div className="flex rounded-lg border border-slate-200 p-1 mb-4 text-sm font-medium">
           <button
@@ -59,7 +60,7 @@ export default function Signup() {
             onClick={() => setTab("create")}
             className={`flex-1 rounded-md py-1.5 ${tab === "create" ? "bg-brand-700 text-white" : "text-slate-600"}`}
           >
-            Start a new ministry
+            Start a new organization
           </button>
           <button
             type="button"
@@ -73,15 +74,35 @@ export default function Signup() {
         <form onSubmit={onSubmit} className="space-y-3">
           {tab === "create" ? (
             <div>
-              <label className="text-sm font-medium text-slate-700">Ministry / church name</label>
+              <div className="flex rounded-lg border border-slate-200 p-1 mb-2 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => setOrgType("church")}
+                  className={`flex-1 rounded-md py-1 ${orgType === "church" ? "bg-brand-700 text-white" : "text-slate-600"}`}
+                >
+                  Church / Ministry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrgType("school")}
+                  className={`flex-1 rounded-md py-1 ${orgType === "school" ? "bg-brand-700 text-white" : "text-slate-600"}`}
+                >
+                  School
+                </button>
+              </div>
+              <label className="text-sm font-medium text-slate-700">
+                {orgType === "church" ? "Church / ministry name" : "School name"}
+              </label>
               <input
                 required
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
-                placeholder="e.g. Grace Community Church"
+                placeholder={orgType === "church" ? "e.g. Grace Community Church" : "e.g. Lincoln Elementary School"}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
-              <p className="text-xs text-slate-400 mt-1">You'll become this ministry's first admin.</p>
+              <p className="text-xs text-slate-400 mt-1">
+                You'll become this {orgType === "church" ? "church" : "school"}'s first admin.
+              </p>
             </div>
           ) : (
             <div>
@@ -90,7 +111,7 @@ export default function Signup() {
                 required
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="From your ministry admin"
+                placeholder="From your organization's admin"
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-brand-400"
               />
             </div>
@@ -145,7 +166,7 @@ export default function Signup() {
             />
             <span>
               I consent to Shmeera storing my information and, if I add any, my children's information (names, photos,
-              medical/allergy notes, authorized pickup contacts) for the purpose of children's ministry check-in and
+              medical/allergy notes, authorized pickup contacts) for the purpose of child check-in and
               safety.
             </span>
           </label>

@@ -33,7 +33,7 @@ function InviteCodePanel() {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
       <p className="text-sm font-semibold text-slate-700">Guardian invite code</p>
-      <p className="text-xs text-slate-500">Share this with parents/guardians — they enter it when signing up to join your ministry.</p>
+      <p className="text-xs text-slate-500">Share this with parents/guardians — they enter it when signing up to join your organization.</p>
       <div className="flex items-center gap-2">
         <span className="flex-1 font-mono tracking-widest text-lg text-brand-800 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           {code ?? "…"}

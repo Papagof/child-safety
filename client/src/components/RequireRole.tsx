@@ -15,7 +15,7 @@ function OrgDeactivatedScreen() {
       <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center space-y-3">
         <h1 className="text-xl font-bold text-brand-900">Account deactivated</h1>
         <p className="text-sm text-slate-500">
-          Your ministry's Shmeera account has been deactivated. Please contact whoever manages your Shmeera
+          Your organization's Shmeera account has been deactivated. Please contact whoever manages your Shmeera
           deployment for details.
         </p>
         <button onClick={logout} className="text-sm text-brand-700 font-medium">
