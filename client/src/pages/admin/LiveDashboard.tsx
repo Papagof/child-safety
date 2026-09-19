@@ -6,6 +6,7 @@ import { useChannel } from "../../lib/useRealtime";
 import type { Room, Session } from "../../lib/types";
 import { Avatar } from "../../components/Avatar";
 import { StatusBadge } from "../../components/StatusBadge";
+import { parseScannedCode, QRScanner } from "../../components/QRScanner";
 
 function TransferControl({ session, rooms, onDone }: { session: Session; rooms: Room[]; onDone: () => void }) {
   const [open, setOpen] = useState(false);
@@ -105,6 +106,7 @@ function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDo
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   if (!open) {
     return (
@@ -114,11 +116,11 @@ function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDo
     );
   }
 
-  async function confirm() {
+  async function confirm(codeToUse: string) {
     setBusy(true);
     setError(null);
     try {
-      const result = await adminApproveCheckout(session.id, code.trim());
+      const result = await adminApproveCheckout(session.id, codeToUse.trim());
       if ("error" in result) {
         setError("Code doesn't match — ask the parent to confirm it.");
         return;
@@ -132,6 +134,22 @@ function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDo
     }
   }
 
+  function handleDetect(value: string) {
+    setScanning(false);
+    const parsed = parseScannedCode(value);
+    if (!parsed) {
+      setError("That doesn't look like a Shmeera code — try again or type it manually.");
+      return;
+    }
+    if (parsed.sessionId !== session.id) {
+      setError("That QR is for a different child's session — try again.");
+      return;
+    }
+    setError(null);
+    setCode(parsed.code);
+    confirm(parsed.code);
+  }
+
   return (
     <div className="flex flex-col items-end gap-1 shrink-0">
       <div className="flex items-center gap-1.5">
@@ -143,8 +161,21 @@ function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDo
           className="w-24 rounded-lg border border-slate-300 px-1.5 py-1 text-xs font-mono uppercase tracking-widest"
         />
         <button
+          onClick={() => {
+            setError(null);
+            setScanning(true);
+          }}
+          title="Scan QR instead"
+          aria-label="Scan QR instead"
+          className="shrink-0 border border-slate-300 rounded-lg px-1.5 py-1 text-slate-600 hover:bg-slate-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+            <path d="M4 4h6v6H4V4Zm2 2v2h2V6H6ZM4 14h6v6H4v-6Zm2 2v2h2v-2H6Zm8-12h6v6h-6V4Zm2 2v2h2V6h-2ZM14 14h2v2h-2v-2Zm4 0h2v2h-2v-2Zm-4 4h2v2h-2v-2Zm4 0h2v2h-2v-2Z" />
+          </svg>
+        </button>
+        <button
           disabled={busy || !code.trim()}
-          onClick={confirm}
+          onClick={() => confirm(code)}
           className="text-xs font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded-lg px-2 py-1 disabled:opacity-50"
         >
           Confirm
@@ -160,6 +191,7 @@ function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDo
         </button>
       </div>
       {error && <span className="text-[11px] text-red-600 text-right max-w-[12rem]">{error}</span>}
+      {scanning && <QRScanner onClose={() => setScanning(false)} onDetect={handleDetect} />}
     </div>
   );
 }
