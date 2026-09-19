@@ -235,6 +235,21 @@ anything else surfaces as that channel's `error` in the admin UI rather than fai
 silently, so that's the first thing to check if SMS delivery ever comes back with an
 error for a specific guardian.
 
+**Admin-relayed pickup confirmation** (`0056_admin_approve_checkout.sql`): for a front-desk
+workflow where a parent presents their pickup code to an admin/office staff rather than
+walking it to the classroom, `admin_approve_checkout(session_id, code)` lets an admin
+verify the real pickup code themselves and confirm the checkout directly — an additional
+path alongside the existing direct parent-to-staff flow (`approve_checkout` is untouched
+and still works), not a replacement. Two-sided confirmation still holds: the code alone
+never released the child, and the admin is still the second independent person who has to
+enter and verify it correctly (a mismatch is rejected and audit-logged exactly like the
+staff path, just with `actor_role = 'admin'`). Because the admin isn't physically in the
+room, `notify_room_staff` fires afterward with an instructional notification telling the
+room's staff to actually send the child out — this is informational only, not a second
+confirmation step, since the checkout has already been approved by the time they see it.
+Wired into `pages/admin/LiveDashboard.tsx`'s `AdminConfirmPickupControl`, shown on any
+`pending_checkout` row.
+
 ## Known intentional gaps in this prototype
 
 SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { adminOverrideCheckout, getLiveSessions, transferSession } from "../../lib/rpc";
+import { adminApproveCheckout, adminOverrideCheckout, getLiveSessions, transferSession } from "../../lib/rpc";
 import { listRooms, sendCodeExternally } from "../../lib/data";
 import { useAuth } from "../../context/AuthContext";
 import { useChannel } from "../../lib/useRealtime";
@@ -95,6 +95,75 @@ function SendCodeControl({ session }: { session: Session }) {
   );
 }
 
+// For a front-desk/office workflow: a parent presents their pickup code to
+// an admin instead of walking it to the classroom. The admin still has to
+// enter the real code — this doesn't skip verification, it just lets the
+// admin be the second confirming person instead of room staff. Room staff
+// get notified afterward to actually send the child out.
+function AdminConfirmPickupControl({ session, onDone }: { session: Session; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="text-xs font-medium text-brand-700 shrink-0">
+        Confirm pickup
+      </button>
+    );
+  }
+
+  async function confirm() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await adminApproveCheckout(session.id, code.trim());
+      if ("error" in result) {
+        setError("Code doesn't match — ask the parent to confirm it.");
+        return;
+      }
+      setOpen(false);
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not confirm pickup");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1 shrink-0">
+      <div className="flex items-center gap-1.5">
+        <input
+          autoFocus
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Pickup code"
+          className="w-24 rounded-lg border border-slate-300 px-1.5 py-1 text-xs font-mono uppercase tracking-widest"
+        />
+        <button
+          disabled={busy || !code.trim()}
+          onClick={confirm}
+          className="text-xs font-semibold text-white bg-brand-700 hover:bg-brand-800 rounded-lg px-2 py-1 disabled:opacity-50"
+        >
+          Confirm
+        </button>
+        <button
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+          }}
+          className="text-xs text-slate-400"
+        >
+          ✕
+        </button>
+      </div>
+      {error && <span className="text-[11px] text-red-600 text-right max-w-[12rem]">{error}</span>}
+    </div>
+  );
+}
+
 export default function LiveDashboard() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -144,6 +213,7 @@ export default function LiveDashboard() {
                   {(s.status === "pending_checkin" || s.status === "pending_checkout") && (
                     <SendCodeControl session={s} />
                   )}
+                  {s.status === "pending_checkout" && <AdminConfirmPickupControl session={s} onDone={load} />}
                   {(s.status === "pending_checkin" || s.status === "checked_in") && (
                     <TransferControl session={s} rooms={rooms} onDone={load} />
                   )}

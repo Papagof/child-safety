@@ -110,6 +110,17 @@ export function adminOverrideCheckout(sessionId: string, reason: string) {
   return rpc<{ session: Session }>("admin_override_checkout", { p_session_id: sessionId, p_reason: reason });
 }
 
+// Admin takes the pickup code directly from a parent (e.g. at a front desk)
+// and confirms checkout themselves — an additional path alongside staff
+// entering it in the room, not a replacement. Still requires the real code;
+// the room's staff are notified afterward to physically release the child.
+export function adminApproveCheckout(sessionId: string, code: string) {
+  return rpc<{ session: Session } | { error: "code_mismatch" }>("admin_approve_checkout", {
+    p_session_id: sessionId,
+    p_code: code,
+  });
+}
+
 export function reportIncident(roomId: string, description: string) {
   return rpc<{ incidentId: string }>("report_incident", { p_room_id: roomId, p_description: description });
 }
