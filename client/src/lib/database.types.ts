@@ -373,6 +373,7 @@ export type Database = {
           id: string
           invite_code: string
           name: string
+          rfid_scan_secret: string | null
         }
         Insert: {
           active?: boolean
@@ -380,6 +381,7 @@ export type Database = {
           id?: string
           invite_code: string
           name: string
+          rfid_scan_secret?: string | null
         }
         Update: {
           active?: boolean
@@ -387,6 +389,7 @@ export type Database = {
           id?: string
           invite_code?: string
           name?: string
+          rfid_scan_secret?: string | null
         }
         Relationships: []
       }
@@ -523,6 +526,48 @@ export type Database = {
           },
         ]
       }
+      rfid_cards: {
+        Row: {
+          card_uid: string
+          child_id: string
+          created_at: string
+          id: string
+          org_id: string
+          status: string
+        }
+        Insert: {
+          card_uid: string
+          child_id: string
+          created_at?: string
+          id?: string
+          org_id: string
+          status?: string
+        }
+        Update: {
+          card_uid?: string
+          child_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfid_cards_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfid_cards_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           active: boolean
@@ -567,11 +612,13 @@ export type Database = {
           checkin_code: string | null
           checkin_code_expires_at: string | null
           checkin_decline_reason: string | null
+          checkin_expiry_warned: boolean
           checkin_requested_at: string | null
           checkin_staff_id: string | null
           checkout_approved_at: string | null
           checkout_code: string | null
           checkout_code_expires_at: string | null
+          checkout_expiry_warned: boolean
           checkout_requested_at: string | null
           checkout_requested_by_id: string | null
           checkout_requested_by_type: string | null
@@ -592,11 +639,13 @@ export type Database = {
           checkin_code?: string | null
           checkin_code_expires_at?: string | null
           checkin_decline_reason?: string | null
+          checkin_expiry_warned?: boolean
           checkin_requested_at?: string | null
           checkin_staff_id?: string | null
           checkout_approved_at?: string | null
           checkout_code?: string | null
           checkout_code_expires_at?: string | null
+          checkout_expiry_warned?: boolean
           checkout_requested_at?: string | null
           checkout_requested_by_id?: string | null
           checkout_requested_by_type?: string | null
@@ -617,11 +666,13 @@ export type Database = {
           checkin_code?: string | null
           checkin_code_expires_at?: string | null
           checkin_decline_reason?: string | null
+          checkin_expiry_warned?: boolean
           checkin_requested_at?: string | null
           checkin_staff_id?: string | null
           checkout_approved_at?: string | null
           checkout_code?: string | null
           checkout_code_expires_at?: string | null
+          checkout_expiry_warned?: boolean
           checkout_requested_at?: string | null
           checkout_requested_by_id?: string | null
           checkout_requested_by_type?: string | null
@@ -750,14 +801,27 @@ export type Database = {
         Args: { p_code: string; p_session_id: string }
         Returns: Json
       }
+      admin_approve_checkout: {
+        Args: { p_code: string; p_session_id: string }
+        Returns: Json
+      }
       admin_override_checkout: {
         Args: { p_reason: string; p_session_id: string }
+        Returns: Json
+      }
+      admin_register_rfid_card: {
+        Args: { p_card_uid: string; p_child_id: string }
         Returns: Json
       }
       admin_set_child_room: {
         Args: { p_child_id: string; p_room_id?: string }
         Returns: Json
       }
+      admin_set_rfid_card_status: {
+        Args: { p_card_id: string; p_status: string }
+        Returns: undefined
+      }
+      admin_simulate_rfid_scan: { Args: { p_card_uid: string }; Returns: Json }
       age_from_dob: { Args: { p_dob: string }; Returns: number }
       approve_checkout: {
         Args: { p_code: string; p_session_id: string }
@@ -783,6 +847,7 @@ export type Database = {
         Returns: Json
       }
       escalate_unread_urgent_messages: { Args: never; Returns: undefined }
+      expire_stale_codes: { Args: never; Returns: undefined }
       flag_noshow_pickups: { Args: never; Returns: undefined }
       flag_pickup_mismatch: {
         Args: { p_description?: string; p_session_id: string }
@@ -807,8 +872,13 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: Json
       }
+      get_rfid_scan_secret: { Args: never; Returns: string }
       get_room_sessions: { Args: { p_room_id: string }; Returns: Json }
       get_session: { Args: { p_id: string }; Returns: Json }
+      get_session_code_for_notify: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       get_thread_messages: { Args: { p_session_id: string }; Returns: Json }
       get_unread_notification_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
@@ -842,6 +912,7 @@ export type Database = {
       }
       list_notifications: { Args: { p_limit?: number }; Returns: Json }
       list_organizations_for_developer: { Args: never; Returns: Json }
+      list_rfid_cards: { Args: never; Returns: Json }
       list_sessions: {
         Args: {
           p_child_id?: string
@@ -884,7 +955,12 @@ export type Database = {
         Returns: Json
       }
       purge_old_records: { Args: { p_before: string }; Returns: Json }
+      record_rfid_scan_internal: {
+        Args: { p_card_uid: string; p_org_id: string }
+        Returns: Json
+      }
       regenerate_invite_code: { Args: never; Returns: string }
+      regenerate_rfid_scan_secret: { Args: never; Returns: string }
       reject_staff: { Args: { p_user_id: string }; Returns: undefined }
       report_incident: {
         Args: { p_description: string; p_room_id: string }
@@ -957,6 +1033,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      warn_expiring_codes: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
@@ -975,12 +1052,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1004,11 +1081,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1029,11 +1106,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1054,11 +1131,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1071,11 +1148,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

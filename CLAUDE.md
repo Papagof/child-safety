@@ -250,6 +250,33 @@ confirmation step, since the checkout has already been approved by the time they
 Wired into `pages/admin/LiveDashboard.tsx`'s `AdminConfirmPickupControl`, shown on any
 `pending_checkout` row.
 
+**RFID self-service sign-in/out** (`0057_rfid_attendance.sql`, `pages/admin/RfidCards.tsx`):
+for secondary students who move independently — no guardian handoff at the door the way
+younger children have — a registered card's tap alone signs them in or out, with no second
+person confirming it in the moment. This is a **deliberate, scoped exception** to the
+two-sided-confirmation principle everywhere else in this app, intentional only for this age
+group; `request_checkin`/`approve_checkout` for younger children are completely untouched,
+and this writes into the same `sessions` table as an additional path, so reporting/audit/
+the admin dashboards all work unchanged. `rfid_cards` (`org_id`, `child_id`, `card_uid`,
+`status`) is RPC-only access, same pattern as `sessions`/`organizations`. Admin manages
+cards via `admin_register_rfid_card`/`admin_set_rfid_card_status`/`list_rfid_cards`. The
+actual toggle logic lives in `record_rfid_scan_internal(org_id, card_uid)` — first tap of
+the day creates a `checked_in` session directly (skipping `pending_checkin` entirely, since
+there's no code/confirmation step), a second tap sets it `checked_out` — granted **only to
+`service_role`**, never `anon`/`authenticated`, so it can't be reached straight from a
+browser. Two entry points reach it: `admin_simulate_rfid_scan` (normal JWT + `is_admin()`,
+for testing with no reader hardware — this is what `RfidCards.tsx`'s "Simulate a scan" panel
+calls) and the `rfid-scan` Edge Function (`--no-verify-jwt`, for an actual future reader
+device, which has no Supabase Auth session of its own). The Edge Function authenticates via
+a per-organization `rfid_scan_secret` (`organizations` column, regenerable, admin-only
+visible via `get_rfid_scan_secret`/`regenerate_rfid_scan_secret` — mirrors `invite_code`'s
+shape) sent as an `x-rfid-secret` header, never a URL param, so a leaked secret only ever
+exposes the one org's readers. **No physical reader hardware is integrated yet** — the Edge
+Function is deployed and ready for whenever one exists; `admin_simulate_rfid_scan` is the
+only way to exercise the flow today. A student needs a `default_room_id` (homeroom) set
+before their card will work — `record_rfid_scan_internal` returns a clear `no_room_assigned`
+error otherwise rather than guessing a room.
+
 ## Known intentional gaps in this prototype
 
 SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired

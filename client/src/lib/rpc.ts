@@ -1,5 +1,5 @@
 import { rpc } from "./supabase";
-import type { AppNotification, AttendanceReportRow, AuditEntry, ChatMessage, Incident, PickupPerson, PickupTimeReport, IncidentsReportRow, Session, StaffAccount } from "./types";
+import type { AppNotification, AttendanceReportRow, AuditEntry, ChatMessage, Incident, PickupPerson, PickupTimeReport, IncidentsReportRow, RfidCard, Session, StaffAccount } from "./types";
 
 // update_pickup_person returns the raw `pickup_people` row (snake_case
 // columns) rather than a hand-built jsonb object like every other RPC —
@@ -289,4 +289,38 @@ export function listOrganizationsForDeveloper() {
 
 export function setOrganizationActive(orgId: string, active: boolean) {
   return rpc<void>("set_organization_active", { p_org_id: orgId, p_active: active });
+}
+
+// --- RFID self-service sign-in/out (secondary students) -------------------------------------
+export function listRfidCards() {
+  return rpc<RfidCard[]>("list_rfid_cards");
+}
+
+export function adminRegisterRfidCard(childId: string, cardUid: string) {
+  return rpc<{ id: string; cardUid: string; status: string }>("admin_register_rfid_card", {
+    p_child_id: childId,
+    p_card_uid: cardUid,
+  });
+}
+
+export function adminSetRfidCardStatus(cardId: string, status: "active" | "inactive") {
+  return rpc<void>("admin_set_rfid_card_status", { p_card_id: cardId, p_status: status });
+}
+
+export function getRfidScanSecret() {
+  return rpc<string>("get_rfid_scan_secret");
+}
+
+export function regenerateRfidScanSecret() {
+  return rpc<string>("regenerate_rfid_scan_secret");
+}
+
+// For testing the whole flow with no reader hardware — goes through the
+// same is_admin()-checked RPC a real reader never touches (that one only
+// takes a shared secret, no user session). See 0057_rfid_attendance.sql.
+export function adminSimulateRfidScan(cardUid: string) {
+  return rpc<{ action: "checked_in" | "checked_out"; childName: string } | { error: string }>(
+    "admin_simulate_rfid_scan",
+    { p_card_uid: cardUid }
+  );
 }

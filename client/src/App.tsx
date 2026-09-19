@@ -22,6 +22,7 @@ import AuditLog from "./pages/admin/AuditLog";
 import Incidents from "./pages/admin/Incidents";
 import Reports from "./pages/admin/Reports";
 import DataRetention from "./pages/admin/DataRetention";
+import RfidCards from "./pages/admin/RfidCards";
 import Developer from "./pages/developer/Developer";
 
 const GUARDIAN_LINKS = [
@@ -37,6 +38,7 @@ const ADMIN_LINKS = [
   { to: "/admin/staff", label: "Staff" },
   { to: "/admin/children", label: "Children" },
   { to: "/admin/rooms", label: "Rooms" },
+  { to: "/admin/rfid", label: "RFID cards" },
   { to: "/admin/incidents", label: "Incidents" },
   { to: "/admin/audit", label: "Audit log" },
   { to: "/admin/reports", label: "Reports" },
@@ -179,6 +181,16 @@ export default function App() {
           <RequireRole role="admin">
             <Layout links={ADMIN_LINKS}>
               <Rooms />
+            </Layout>
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/rfid"
+        element={
+          <RequireRole role="admin">
+            <Layout links={ADMIN_LINKS}>
+              <RfidCards />
             </Layout>
           </RequireRole>
         }

@@ -174,3 +174,12 @@ export interface StaffAccount {
   appliedAt: string;
   roomIds: string[];
 }
+
+export interface RfidCard {
+  id: string;
+  cardUid: string;
+  status: "active" | "inactive";
+  childId: string;
+  childName: string;
+  createdAt: string;
+}
