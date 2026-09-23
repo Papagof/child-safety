@@ -23,6 +23,7 @@ import Incidents from "./pages/admin/Incidents";
 import Reports from "./pages/admin/Reports";
 import DataRetention from "./pages/admin/DataRetention";
 import RfidCards from "./pages/admin/RfidCards";
+import StaffAttendance from "./pages/admin/StaffAttendance";
 import Developer from "./pages/developer/Developer";
 
 const GUARDIAN_LINKS = [
@@ -39,6 +40,7 @@ const ADMIN_LINKS = [
   { to: "/admin/children", label: "Children" },
   { to: "/admin/rooms", label: "Rooms" },
   { to: "/admin/rfid", label: "RFID cards" },
+  { to: "/admin/staff-attendance", label: "Staff attendance" },
   { to: "/admin/incidents", label: "Incidents" },
   { to: "/admin/audit", label: "Audit log" },
   { to: "/admin/reports", label: "Reports" },
@@ -191,6 +193,16 @@ export default function App() {
           <RequireRole role="admin">
             <Layout links={ADMIN_LINKS}>
               <RfidCards />
+            </Layout>
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/admin/staff-attendance"
+        element={
+          <RequireRole role="admin">
+            <Layout links={ADMIN_LINKS}>
+              <StaffAttendance />
             </Layout>
           </RequireRole>
         }

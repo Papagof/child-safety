@@ -1,14 +1,86 @@
 import { useEffect, useState, useCallback } from "react";
 import { RpcError } from "../../lib/supabase";
-import { acceptCheckin, approveCheckout, declineCheckin, flagPickupMismatch, getRoomSessions, reportIncident, transferSession } from "../../lib/rpc";
+import {
+  acceptCheckin,
+  approveCheckout,
+  declineCheckin,
+  flagPickupMismatch,
+  getMyAttendanceToday,
+  getRoomSessions,
+  reportIncident,
+  staffSignIn,
+  staffSignOut,
+  transferSession,
+} from "../../lib/rpc";
 import { listRooms } from "../../lib/data";
 import { useAuth } from "../../context/AuthContext";
 import { useChannel } from "../../lib/useRealtime";
-import type { Room, Session } from "../../lib/types";
+import type { AttendanceCycle, Room, Session } from "../../lib/types";
 import { Avatar } from "../../components/Avatar";
 import { StatusBadge } from "../../components/StatusBadge";
 import { ChatPanel } from "../../components/ChatPanel";
 import { parseScannedCode, QRScanner } from "../../components/QRScanner";
+
+function timeOf(iso: string) {
+  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function AttendanceControl() {
+  const [cycles, setCycles] = useState<AttendanceCycle[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setCycles(await getMyAttendanceToday());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const open = cycles.find((c) => !c.signedOutAt);
+
+  async function toggle() {
+    setBusy(true);
+    setError(null);
+    try {
+      if (open) await staffSignOut();
+      else await staffSignIn();
+      await load();
+    } catch (err) {
+      setError(err instanceof RpcError ? err.message : "Could not update attendance");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold text-slate-700">
+          {open ? `Signed in since ${timeOf(open.signedInAt)}` : "Not signed in"}
+        </p>
+        {!open && cycles.length > 0 && (
+          <p className="text-xs text-slate-400">Last signed out at {timeOf(cycles[cycles.length - 1].signedOutAt!)}</p>
+        )}
+        {error && <p className="text-xs text-red-600 mt-0.5">{error}</p>}
+      </div>
+      <button
+        disabled={busy}
+        onClick={toggle}
+        className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 shrink-0 ${
+          open ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"
+        }`}
+      >
+        {open ? "Sign out" : "Sign in"}
+      </button>
+    </div>
+  );
+}
 
 function CodeAction({
   sessionId,
@@ -364,7 +436,12 @@ export default function StaffDashboard() {
   }
 
   if (staff.rooms.length === 0) {
-    return <p className="text-slate-500">You haven't been assigned to a room yet — ask an admin to assign you.</p>;
+    return (
+      <div className="space-y-4">
+        <AttendanceControl />
+        <p className="text-slate-500">You haven't been assigned to a room yet — ask an admin to assign you.</p>
+      </div>
+    );
   }
 
   const pending = sessions.filter((s) => s.status === "pending_checkin");
@@ -373,6 +450,8 @@ export default function StaffDashboard() {
 
   return (
     <div className="space-y-6">
+      <AttendanceControl />
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-800">Room dashboard</h1>
         {staff.rooms.length > 1 && (

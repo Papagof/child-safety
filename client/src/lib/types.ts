@@ -175,6 +175,21 @@ export interface StaffAccount {
   roomIds: string[];
 }
 
+export interface AttendanceCycle {
+  id: string;
+  signedInAt: string;
+  signedOutAt: string | null;
+}
+
+export interface StaffAttendanceRecord {
+  id: string;
+  staffId: string;
+  staffName: string;
+  serviceDate: string;
+  signedInAt: string;
+  signedOutAt: string | null;
+}
+
 export interface RfidCard {
   id: string;
   cardUid: string;

@@ -733,6 +733,48 @@ export type Database = {
           },
         ]
       }
+      staff_attendance: {
+        Row: {
+          id: string
+          org_id: string
+          service_date: string
+          signed_in_at: string
+          signed_out_at: string | null
+          staff_id: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          service_date?: string
+          signed_in_at?: string
+          signed_out_at?: string | null
+          staff_id: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          service_date?: string
+          signed_in_at?: string
+          signed_out_at?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_details: {
         Row: {
           approval_status: string
@@ -865,6 +907,7 @@ export type Database = {
       get_invite_code: { Args: never; Returns: string }
       get_live_counts: { Args: never; Returns: Json }
       get_live_sessions: { Args: never; Returns: Json }
+      get_my_attendance_today: { Args: never; Returns: Json }
       get_my_org_id: { Args: never; Returns: string }
       get_my_profile: { Args: never; Returns: Json }
       get_my_sessions: { Args: never; Returns: Json }
@@ -923,6 +966,10 @@ export type Database = {
         Returns: Json
       }
       list_staff_accounts: { Args: never; Returns: Json }
+      list_staff_attendance: {
+        Args: { p_from?: string; p_staff_id?: string; p_to?: string }
+        Returns: Json
+      }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: { Args: { p_id: string }; Returns: undefined }
       mark_thread_read: { Args: { p_session_id: string }; Returns: undefined }
@@ -998,6 +1045,8 @@ export type Database = {
         Args: { p_child_id: string }
         Returns: boolean
       }
+      staff_sign_in: { Args: never; Returns: Json }
+      staff_sign_out: { Args: never; Returns: Json }
       today_service_date: { Args: never; Returns: string }
       transfer_session: {
         Args: { p_new_room_id: string; p_session_id: string }

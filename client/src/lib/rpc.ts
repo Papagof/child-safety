@@ -1,5 +1,5 @@
 import { rpc } from "./supabase";
-import type { AppNotification, AttendanceReportRow, AuditEntry, ChatMessage, Incident, PickupPerson, PickupTimeReport, IncidentsReportRow, RfidCard, Session, StaffAccount } from "./types";
+import type { AppNotification, AttendanceCycle, AttendanceReportRow, AuditEntry, ChatMessage, Incident, PickupPerson, PickupTimeReport, IncidentsReportRow, RfidCard, Session, StaffAccount, StaffAttendanceRecord } from "./types";
 
 // update_pickup_person returns the raw `pickup_people` row (snake_case
 // columns) rather than a hand-built jsonb object like every other RPC —
@@ -313,6 +313,27 @@ export function getRfidScanSecret() {
 
 export function regenerateRfidScanSecret() {
   return rpc<string>("regenerate_rfid_scan_secret");
+}
+
+// --- staff daily sign-in/out (attendance) -------------------------------------
+export function staffSignIn() {
+  return rpc<{ id: string; signedInAt: string }>("staff_sign_in");
+}
+
+export function staffSignOut() {
+  return rpc<{ id: string; signedOutAt: string }>("staff_sign_out");
+}
+
+export function getMyAttendanceToday() {
+  return rpc<AttendanceCycle[]>("get_my_attendance_today");
+}
+
+export function listStaffAttendance(filters: { from?: string; to?: string; staffId?: string } = {}) {
+  return rpc<StaffAttendanceRecord[]>("list_staff_attendance", {
+    p_from: filters.from ?? null,
+    p_to: filters.to ?? null,
+    p_staff_id: filters.staffId ?? null,
+  });
 }
 
 // For testing the whole flow with no reader hardware — goes through the

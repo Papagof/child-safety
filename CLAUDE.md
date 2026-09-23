@@ -277,6 +277,21 @@ only way to exercise the flow today. A student needs a `default_room_id` (homero
 before their card will work — `record_rfid_scan_internal` returns a clear `no_room_assigned`
 error otherwise rather than guessing a room.
 
+**Daily staff/teacher sign-in and sign-out** (`0058_staff_attendance.sql`, `staff_attendance` table):
+presence/attendance tracking for staff, deliberately separate from the child check-in/checkout
+flow — no child custody is involved, so this is **not** governed by the two-sided-confirmation
+principle above. A staff member is already authenticated as themselves; tapping "Sign in"/"Sign
+out" on their own dashboard (`StaffDashboard.tsx`'s `AttendanceControl`) is self-service, with no
+second person confirming it, the same way a person clocking themselves in doesn't need a witness.
+`staff_sign_in()`/`staff_sign_out()` are gated by `is_approved_staff()` (not `is_admin()` — this is
+staff acting on their own record, not an admin action) and enforce at most one open (not yet
+signed out) row per staff member via a partial unique index, which still allows multiple
+sign-in/out cycles in a day (e.g. a lunch break). `list_staff_attendance` is the admin-facing
+report (`pages/admin/StaffAttendance.tsx`), org-scoped like every other admin list/report RPC.
+Applies to every organization, not just schools — org type (church vs. school) isn't tracked as
+data anywhere in this app (the signup toggle only changes field labels), so this was built as a
+general feature rather than adding that distinction just for this.
+
 ## Known intentional gaps in this prototype
 
 SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired
