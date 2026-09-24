@@ -193,21 +193,14 @@ to push arbitrary notifications to an arbitrary user. `client/public/sw.js` is a
 service worker (push + notificationclick only — no fetch interception, so this adds no
 offline behavior, that's still a separate gap).
 
-**One-time setup this needs** (none of this is done yet as of writing — Supabase's MCP
-tools weren't loaded in the session that built this feature, so it could only be coded, not
-deployed):
-1. Generate a VAPID key pair (`npx web-push generate-vapid-keys`).
-2. `supabase functions deploy send-push --no-verify-jwt` (or paste `index.ts` into the
-   Studio Edge Functions editor).
-3. Set three secrets on the function (Studio: Functions → send-push → Secrets, or
-   `supabase secrets set`): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `WEBHOOK_SECRET` (any
-   random string you invent — it just has to match step 4's header).
-4. Studio → Database → Webhooks → create one: table `notifications`, event `INSERT`, HTTP
-   request to the `send-push` function's URL, with a custom header
-   `x-webhook-secret: <the same value as WEBHOOK_SECRET>`.
-5. Add `VITE_VAPID_PUBLIC_KEY=<the public key from step 1>` to `client/.env` **and** to
-   Vercel's project environment variables, then redeploy the client.
-6. Apply `0053_push_subscriptions.sql` (Studio SQL editor, same as `0052`).
+**Live as of this writing**: fully set up and working — `0053_push_subscriptions.sql` is
+applied, `send-push` is deployed with its VAPID/webhook secrets set, the `notifications`
+`AFTER INSERT` → `send-push` database webhook is configured in Studio (confirmed firing via
+`supabase_functions.hooks`), and there are real `push_subscriptions` rows from users who've
+enabled it. `client/.env`'s `VITE_VAPID_PUBLIC_KEY` needs to also be set wherever the client
+is actually hosted (its own env var panel, separate from Supabase) — re-check this
+specifically after any hosting migration, since it's easy to carry over the Supabase URL/key
+but forget this one.
 
 **Admin-triggered code delivery by SMS/email**: an admin can push a session's
 currently-active check-in/pickup code straight to the guardian's own phone and email —
@@ -318,3 +311,15 @@ low default send-rate limit) and leaked-password protection (currently off).
 - Supabase project `mqjijvquvphlbdwbywox` — see `client/.env` for the URL/anon key (not
   committed). Schema changes go in `supabase/migrations/`, applied via the Supabase MCP
   tools (`apply_migration`) or the Supabase CLI/Studio SQL editor.
+- **The local `supabase/migrations/*.sql` files are a human-readable record, not what the
+  Supabase CLI's own migration tracking thinks is applied.** Every migration in this
+  project's history was pushed live via the MCP `apply_migration` tool (or the Studio SQL
+  editor), which stamps its own timestamp-based version into
+  `supabase_migrations.schema_migrations` — those versions don't match the local files'
+  `0001_...`–`0058_...` naming. Running `supabase db pull`/`db push`/`migration list` from
+  the CLI against this project will fail with "Remote migration versions not found in local
+  migrations directory." This is expected, not a sign of drift — the schema itself is fully
+  applied and correct (checked via `get_advisors`/`list_migrations` throughout this
+  project's history). Keep using the MCP tools or Studio SQL editor for schema changes;
+  don't try to reconcile the two numbering schemes unless the CLI's own migration workflow
+  is specifically needed.
