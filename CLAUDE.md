@@ -285,6 +285,22 @@ Applies to every organization, not just schools — org type (church vs. school)
 data anywhere in this app (the signup toggle only changes field labels), so this was built as a
 general feature rather than adding that distinction just for this.
 
+**Classrooms vs. rooms** (`0059_classroom_grade_level.sql`): `organizations.org_type` (`'church'` or
+`'school'`) is now real, stored data — previously `Signup.tsx`'s create/join toggle only changed
+field labels, never what got saved. Set once at signup (`create_organization`'s new `p_org_type`
+param) and never changeable afterward via any RPC, the same "fixed at creation" treatment `org_id`
+itself gets elsewhere. `get_my_profile()` now returns it on `user.orgType`, which drives per-org-type
+UI throughout the client (`App.tsx`'s nav label, `Rooms.tsx`'s whole form). `rooms.grade_level`
+(nullable) is the first thing this actually unlocks: a school's classrooms are labeled by grade/
+homeroom ("Grade 3") instead of an age range, shown wherever a room is picked or listed
+(`Rooms.tsx`, `CheckIn.tsx`, `BulkCheckIn.tsx`). `age_min`/`age_max` are untouched and still set
+under the hood even for a school room (defaulted, not surfaced in the school-mode form) — they're
+still load-bearing for the guardian check-in room auto-suggestion, which stays useful for a school
+too (it still points at the classroom whose age band matches the child). Extending this org_type
+split to other pages (e.g. `StaffApprovals.tsx`'s "room" wording) is straightforward now that the
+real field exists — check `user.orgType` the same way `Rooms.tsx` does, don't add another
+`orgName`-guessing heuristic.
+
 ## Known intentional gaps in this prototype
 
 SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired

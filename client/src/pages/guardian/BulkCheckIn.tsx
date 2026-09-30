@@ -127,7 +127,7 @@ export default function BulkCheckIn() {
               >
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.name} (ages {r.ageMin}-{r.ageMax})
+                    {r.name} ({r.gradeLevel ?? `ages ${r.ageMin}-${r.ageMax}`})
                   </option>
                 ))}
               </select>

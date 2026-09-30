@@ -1,5 +1,7 @@
 export type Role = "guardian" | "staff" | "admin";
 
+export type OrgType = "church" | "school";
+
 export interface User {
   id: string;
   email: string;
@@ -9,6 +11,7 @@ export interface User {
   phone?: string | null;
   orgId: string;
   orgName: string;
+  orgType: OrgType;
   orgActive: boolean;
   isDeveloper: boolean;
 }
@@ -18,6 +21,7 @@ export interface Room {
   name: string;
   ageMin: number;
   ageMax: number;
+  gradeLevel: string | null;
   capacity: number;
   active: boolean;
 }

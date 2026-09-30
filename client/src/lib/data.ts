@@ -68,13 +68,13 @@ export async function listRooms(): Promise<Room[]> {
   const { data, error } = await supabase.from("rooms").select("*").order("name");
   if (error) throw error;
   return (data ?? []).map((r) => ({
-    id: r.id, name: r.name, ageMin: r.age_min, ageMax: r.age_max, capacity: r.capacity, active: r.active,
+    id: r.id, name: r.name, ageMin: r.age_min, ageMax: r.age_max, gradeLevel: r.grade_level, capacity: r.capacity, active: r.active,
   }));
 }
 
-export async function createRoom(input: { name: string; ageMin: number; ageMax: number; capacity: number }) {
+export async function createRoom(input: { name: string; ageMin: number; ageMax: number; gradeLevel?: string | null; capacity: number }) {
   const { error } = await supabase.from("rooms").insert({
-    name: input.name, age_min: input.ageMin, age_max: input.ageMax, capacity: input.capacity,
+    name: input.name, age_min: input.ageMin, age_max: input.ageMax, grade_level: input.gradeLevel ?? null, capacity: input.capacity,
   });
   if (error) throw error;
 }
@@ -84,13 +84,14 @@ export async function setRoomActive(id: string, active: boolean) {
   if (error) throw error;
 }
 
-export async function updateRoom(id: string, fields: Partial<{ name: string; ageMin: number; ageMax: number; capacity: number }>) {
+export async function updateRoom(id: string, fields: Partial<{ name: string; ageMin: number; ageMax: number; gradeLevel: string | null; capacity: number }>) {
   const { error } = await supabase
     .from("rooms")
     .update({
       ...(fields.name !== undefined && { name: fields.name }),
       ...(fields.ageMin !== undefined && { age_min: fields.ageMin }),
       ...(fields.ageMax !== undefined && { age_max: fields.ageMax }),
+      ...(fields.gradeLevel !== undefined && { grade_level: fields.gradeLevel }),
       ...(fields.capacity !== undefined && { capacity: fields.capacity }),
     })
     .eq("id", id);

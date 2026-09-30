@@ -373,6 +373,7 @@ export type Database = {
           id: string
           invite_code: string
           name: string
+          org_type: string
           rfid_scan_secret: string | null
         }
         Insert: {
@@ -381,6 +382,7 @@ export type Database = {
           id?: string
           invite_code: string
           name: string
+          org_type?: string
           rfid_scan_secret?: string | null
         }
         Update: {
@@ -389,6 +391,7 @@ export type Database = {
           id?: string
           invite_code?: string
           name?: string
+          org_type?: string
           rfid_scan_secret?: string | null
         }
         Relationships: []
@@ -574,6 +577,7 @@ export type Database = {
           age_max: number
           age_min: number
           capacity: number
+          grade_level: string | null
           id: string
           name: string
           org_id: string
@@ -583,6 +587,7 @@ export type Database = {
           age_max?: number
           age_min?: number
           capacity?: number
+          grade_level?: string | null
           id?: string
           name: string
           org_id?: string
@@ -592,6 +597,7 @@ export type Database = {
           age_max?: number
           age_min?: number
           capacity?: number
+          grade_level?: string | null
           id?: string
           name?: string
           org_id?: string
@@ -881,7 +887,7 @@ export type Database = {
         Returns: undefined
       }
       create_organization: {
-        Args: { p_consent?: boolean; p_full_name: string; p_name: string }
+        Args: { p_consent?: boolean; p_full_name: string; p_name: string; p_org_type?: string }
         Returns: Json
       }
       decline_checkin: {

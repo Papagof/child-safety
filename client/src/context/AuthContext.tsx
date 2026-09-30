@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { createOrganization, getMyProfile, joinOrganizationByInvite } from "../lib/rpc";
-import type { User } from "../lib/types";
+import type { OrgType, User } from "../lib/types";
 
 interface StaffStatus {
   approvalStatus: "pending" | "approved" | "rejected";
@@ -14,7 +14,9 @@ interface StaffStatus {
 // admin-shared invite code — there's no public directory of churches, and
 // staff accounts are always admin-created directly (lib/data.ts's
 // adminCreateStaff), never self-service.
-export type SignupMode = { mode: "create"; orgName: string } | { mode: "join"; inviteCode: string; phone?: string };
+export type SignupMode =
+  | { mode: "create"; orgName: string; orgType: OrgType }
+  | { mode: "join"; inviteCode: string; phone?: string };
 
 interface AuthState {
   user: User | null;
@@ -92,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const pending = readPendingSignup(session.user.email ?? "");
         if (pending) {
           if (pending.modeArgs.mode === "create") {
-            await createOrganization(pending.modeArgs.orgName, pending.fullName, pending.consent);
+            await createOrganization(pending.modeArgs.orgName, pending.fullName, pending.consent, pending.modeArgs.orgType);
           } else {
             await joinOrganizationByInvite(pending.modeArgs.inviteCode, pending.fullName, pending.consent, pending.modeArgs.phone);
           }
@@ -139,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { needsEmailConfirmation: true };
     }
     if (modeArgs.mode === "create") {
-      await createOrganization(modeArgs.orgName, fullName, consent);
+      await createOrganization(modeArgs.orgName, fullName, consent, modeArgs.orgType);
     } else {
       await joinOrganizationByInvite(modeArgs.inviteCode, fullName, consent, modeArgs.phone);
     }

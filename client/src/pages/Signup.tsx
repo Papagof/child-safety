@@ -38,7 +38,7 @@ export default function Signup() {
     setBusy(true);
     try {
       const modeArgs: SignupMode =
-        tab === "create" ? { mode: "create", orgName } : { mode: "join", inviteCode, phone: phone || undefined };
+        tab === "create" ? { mode: "create", orgName, orgType } : { mode: "join", inviteCode, phone: phone || undefined };
       const result = await signup(email, password, fullName, consent, modeArgs);
       if (result.needsEmailConfirmation) setNeedsEmailConfirmation(true);
     } catch (err: any) {

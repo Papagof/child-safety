@@ -34,18 +34,20 @@ const GUARDIAN_LINKS = [
 
 const STAFF_LINKS = [{ to: "/staff", label: "Room dashboard" }];
 
-const ADMIN_LINKS = [
-  { to: "/admin/live", label: "Live dashboard" },
-  { to: "/admin/staff", label: "Staff" },
-  { to: "/admin/children", label: "Children" },
-  { to: "/admin/rooms", label: "Rooms" },
-  { to: "/admin/rfid", label: "RFID cards" },
-  { to: "/admin/staff-attendance", label: "Staff attendance" },
-  { to: "/admin/incidents", label: "Incidents" },
-  { to: "/admin/audit", label: "Audit log" },
-  { to: "/admin/reports", label: "Reports" },
-  { to: "/admin/retention", label: "Data retention" },
-];
+function adminLinks(isSchool: boolean) {
+  return [
+    { to: "/admin/live", label: "Live dashboard" },
+    { to: "/admin/staff", label: "Staff" },
+    { to: "/admin/children", label: "Children" },
+    { to: "/admin/rooms", label: isSchool ? "Classrooms" : "Rooms" },
+    { to: "/admin/rfid", label: "RFID cards" },
+    { to: "/admin/staff-attendance", label: "Staff attendance" },
+    { to: "/admin/incidents", label: "Incidents" },
+    { to: "/admin/audit", label: "Audit log" },
+    { to: "/admin/reports", label: "Reports" },
+    { to: "/admin/retention", label: "Data retention" },
+  ];
+}
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -57,6 +59,8 @@ function RoleRedirect() {
 }
 
 export default function App() {
+  const { user } = useAuth();
+  const ADMIN_LINKS = adminLinks(user?.orgType === "school");
   return (
     <Routes>
       <Route path="/" element={<RoleRedirect />} />

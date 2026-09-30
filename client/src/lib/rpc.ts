@@ -1,5 +1,5 @@
 import { rpc } from "./supabase";
-import type { AppNotification, AttendanceCycle, AttendanceReportRow, AuditEntry, ChatMessage, Incident, PickupPerson, PickupTimeReport, IncidentsReportRow, RfidCard, Session, StaffAccount, StaffAttendanceRecord } from "./types";
+import type { AppNotification, AttendanceCycle, AttendanceReportRow, AuditEntry, ChatMessage, Incident, OrgType, PickupPerson, PickupTimeReport, IncidentsReportRow, RfidCard, Session, StaffAccount, StaffAttendanceRecord } from "./types";
 
 // update_pickup_person returns the raw `pickup_people` row (snake_case
 // columns) rather than a hand-built jsonb object like every other RPC —
@@ -21,8 +21,13 @@ export function mapPickupPerson(row: any): PickupPerson {
 // Self-serve org creation mints exactly one first admin; a guardian or staff
 // member joins an EXISTING org only via an admin-shared invite code — there
 // is no public directory of churches to browse.
-export function createOrganization(name: string, fullName: string, consent: boolean) {
-  return rpc<{ orgId: string; orgName: string }>("create_organization", { p_name: name, p_full_name: fullName, p_consent: consent });
+export function createOrganization(name: string, fullName: string, consent: boolean, orgType: OrgType = "church") {
+  return rpc<{ orgId: string; orgName: string }>("create_organization", {
+    p_name: name,
+    p_full_name: fullName,
+    p_consent: consent,
+    p_org_type: orgType,
+  });
 }
 
 export function joinOrganizationByInvite(inviteCode: string, fullName: string, consent: boolean, phone?: string) {
@@ -52,6 +57,7 @@ export interface MyProfile {
     photoUrl: string | null;
     orgId: string;
     orgName: string;
+    orgType: OrgType;
     orgActive: boolean;
     isDeveloper: boolean;
   };
