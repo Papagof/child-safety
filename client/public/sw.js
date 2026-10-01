@@ -1,7 +1,16 @@
 // Web Push service worker. Deliberately minimal: it only reacts to a push
-// event and a notification click — it does not intercept fetches or cache
-// anything, so it adds no offline behavior (that's still a documented,
-// separate gap — see CLAUDE.md's "Known intentional gaps").
+// event and a notification click — it does not cache anything, so it adds
+// no offline behavior (that's still a documented, separate gap — see
+// CLAUDE.md's "Known intentional gaps").
+//
+// A no-op passthrough fetch handler (below) is required anyway: Chrome's
+// install-to-home-screen criteria have long required a service worker that
+// handles `fetch`, even one that does nothing but forward to the network —
+// without it, "Add to Home Screen"/the install prompt may never offer.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
