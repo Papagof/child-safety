@@ -193,6 +193,21 @@ to push arbitrary notifications to an arbitrary user. `client/public/sw.js` is a
 service worker (push + notificationclick only — no fetch interception, so this adds no
 offline behavior, that's still a separate gap).
 
+**Installable as a PWA**: `client/public/manifest.json` (name, icons, `display: "standalone"`,
+brand navy theme/background color) plus `index.html`'s `<link rel="manifest">`/icon tags make
+this installable to a phone's home screen. `sw.js` is now registered unconditionally in
+`main.tsx` on every page load (not just when a user opts into push) — a registered service
+worker is one of the browser's install-to-home-screen criteria, so without this the "Add to
+Home Screen" prompt would never fire for someone who never touches the push toggle;
+`lib/push.ts`'s own `register()` call later just reuses this same registration (idempotent
+per the SW spec). The app icon (`public/icon-*.png`, `apple-touch-icon.png`, `favicon.png`)
+was generated from a hand-authored SVG (shield + checkmark, brand-900/brand-700) rasterized
+via headless Chrome screenshots — there's no source design file, so regenerate from scratch
+(or commission real artwork) rather than trying to edit the PNGs directly if the mark ever
+needs to change. This still doesn't add offline support (see `sw.js`'s own note above) — it
+only makes the existing online-only app installable, which is a prerequisite for eventually
+wrapping it as a Trusted Web Activity for the Play Store, not the same thing as one.
+
 **Live as of this writing**: fully set up and working — `0053_push_subscriptions.sql` is
 applied, `send-push` is deployed with its VAPID/webhook secrets set, the `notifications`
 `AFTER INSERT` → `send-push` database webhook is configured in Studio (confirmed firing via
