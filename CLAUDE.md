@@ -316,6 +316,28 @@ split to other pages (e.g. `StaffApprovals.tsx`'s "room" wording) is straightfor
 real field exists — check `user.orgType` the same way `Rooms.tsx` does, don't add another
 `orgName`-guessing heuristic.
 
+## Automated safety tests
+
+`supabase/tests/rpc_safety_test.sql` is a self-contained regression test for the two
+properties this file calls non-negotiable: two-sided confirmation (a code alone never
+changes a child's status) and org isolation (an admin can never see or act on another
+org's data). Before this, every one of these properties had only ever been checked by
+hand, in a session, against the live database — this project has no local Supabase stack
+and no CI (see "Commands" below for why `supabase db push`-style local tooling doesn't
+work here), so a committed, re-runnable assertion script is the only practical form
+"automated test" can take right now. It creates disposable `ZZTEST`-tagged orgs/users/
+rooms/children, impersonates each actor via `set_config('request.jwt.claim.sub', ...)`
+(the same trick this project's own earlier verification migrations used), asserts each
+property, then deletes everything it created — a failed assertion aborts the whole `do`
+block and Postgres rolls back all of it automatically, so a failure leaves zero trace.
+One assertion (`rooms` RLS) needs `set local role authenticated` first, since the
+connection this runs under (`postgres`, `BYPASSRLS`) would otherwise see every row
+regardless of impersonation and silently prove nothing — every other assertion calls an
+RPC directly, which is unaffected by that distinction since they're all `security
+definer`. Last run: all 15 assertions passed against production with zero leftover rows.
+Re-run this whenever a session/RLS/org-scoping RPC changes, by pasting the file into the
+Studio SQL editor or the Supabase MCP `execute_sql` tool — never apply it as a migration.
+
 ## Known intentional gaps in this prototype
 
 SMS escalation via Twilio for **urgent-chat escalation** specifically is still not wired
