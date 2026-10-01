@@ -1,0 +1,52 @@
+{
+  "packageId": "com.shmeera.app",
+  "host": "shmeera.com",
+  "name": "Shmeera — Check-In & Safety",
+  "launcherName": "Shmeera",
+  "display": "standalone",
+  "themeColor": "#28304E",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#28304E",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://shmeera.com/icon-512.png",
+  "maskableIconUrl": "https://shmeera.com/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "shmeera"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "unknown",
+  "webManifestUrl": "https://shmeera.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://shmeera.com/",
+  "minSdkVersion": 21,
+  "orientation": "default",
+  "fingerprints": [
+    {
+      "name": "Upload key (local build, pre-Play-App-Signing)",
+      "value": "DF:6B:0E:61:68:8F:B1:72:92:FE:19:13:34:4A:D9:73:C0:19:2C:46:2F:DA:64:FD:46:05:F9:E9:B0:90:96:6A"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
+}

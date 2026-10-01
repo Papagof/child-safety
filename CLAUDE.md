@@ -316,6 +316,29 @@ split to other pages (e.g. `StaffApprovals.tsx`'s "room" wording) is straightfor
 real field exists — check `user.orgType` the same way `Rooms.tsx` does, don't add another
 `orgName`-guessing heuristic.
 
+## Android app (Play Store)
+
+`android-twa/` wraps the installable PWA as a Trusted Web Activity via
+[Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) — a thin native shell, no
+app logic of its own; the real app is still `client/`. Only `twa-manifest.json`,
+`gen-manifest.js`, and `package.json` are committed — the generated Gradle project, the
+signing keystore, and build outputs are gitignored and regenerated on demand (same
+principle as `client/dist/` never being committed). **See `android-twa/README.md` for
+the full rebuild process** — it documents several non-obvious fixes needed to get
+bubblewrap working at all on Windows: a broken interactive setup wizard (write its config
+file directly instead), a dead `jcenter()` repository reference in its Gradle template
+(replace with `mavenCentral()` after every regenerate), an unquoted-path bug in its
+Windows apksigner invocation (needs a no-space JDK junction), a `gradlew.bat`
+not-recognized failure specific to Git Bash (use PowerShell instead), and a 403 from
+Hostinger's CDN under bubblewrap's default fetch engine (force `node-fetch`).
+`client/public/.well-known/assetlinks.json` is the reverse half of the trust relationship
+(declares the Android app's package id + signing certificate fingerprint as trusted by
+the site) — it needs a second fingerprint added once the app is enrolled in Google Play
+App Signing, since end users install Google's re-signed APK, not the locally-built one.
+A signed APK/AAB has been built and verified locally; nothing has been uploaded to Play
+Console (needs a developer account, store listing, and Families Policy compliance
+declarations — none of that is automatable from here).
+
 ## Automated safety tests
 
 `supabase/tests/rpc_safety_test.sql` is a self-contained regression test for the two
