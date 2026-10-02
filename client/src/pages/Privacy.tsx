@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import type { ReactNode } from "react";
 
 const EFFECTIVE_DATE = "October 2, 2026";
-const CONTACT_EMAIL = "privacy@shmeera.com";
+const CONTACT_EMAIL = "contact@shmeera.com";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
