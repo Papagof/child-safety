@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { getMySessions, requestCheckout } from "../../lib/rpc";
 import { exportMyData, myChildren } from "../../lib/data";
 import { useAuth } from "../../context/AuthContext";

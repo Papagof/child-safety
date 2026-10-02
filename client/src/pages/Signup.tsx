@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router";
 import { useAuth, type SignupMode } from "../context/AuthContext";
 
 export default function Signup() {

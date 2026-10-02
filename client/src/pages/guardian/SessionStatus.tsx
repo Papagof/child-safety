@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import { RpcError } from "../../lib/supabase";
 import { getSession, requestCheckout } from "../../lib/rpc";
 import { listRooms, myPickupPeople } from "../../lib/data";
