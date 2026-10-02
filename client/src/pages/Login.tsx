@@ -64,6 +64,9 @@ export default function Login() {
         <p className="text-sm text-slate-500 mt-2 text-center">
           <Link to="/forgot-password" className="text-brand-700 font-medium">Forgot password?</Link>
         </p>
+        <p className="text-xs text-slate-400 mt-4 text-center">
+          <Link to="/privacy" className="hover:text-slate-500">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   );

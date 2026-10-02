@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Privacy from "./pages/Privacy";
 import GuardianDashboard from "./pages/guardian/GuardianDashboard";
 import ChildrenSetup from "./pages/guardian/ChildrenSetup";
 import CheckIn from "./pages/guardian/CheckIn";
@@ -68,6 +69,7 @@ export default function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/privacy" element={<Privacy />} />
 
       <Route
         path="/guardian"
