@@ -117,15 +117,23 @@ to actually upload to Play Console).
 
 1. A Google Play Console developer account ($25 one-time, needs the
    account owner's identity/payment details).
-2. Enroll in **Play App Signing** on first upload — Google then re-signs the
+2. **New personal accounts (created after Nov 13, 2023) must run a closed
+   test first**: upload to the **Closed testing** track (not Internal —
+   only Closed counts) with at least 12 opted-in testers, for 14
+   *consecutive* days, before the Production track unlocks at all. If the
+   active tester count drops below 12 on any day, the 14-day clock resets
+   to zero. Organization accounts are exempt; this one isn't. Line up
+   testers (church/school staff, a few parents) before you need them so
+   this doesn't sit idle.
+3. Enroll in **Play App Signing** on first upload — Google then re-signs the
    app with its own key for distribution, and reveals that key's SHA-256
    fingerprint. **Add that fingerprint as a second entry** in
    `client/public/.well-known/assetlinks.json` — end users install the
    Google-signed APK, not the one built here, so the live site needs to
    trust both.
-3. Store listing: screenshots, description, content rating questionnaire,
+4. Store listing: screenshots, description, content rating questionnaire,
    and — since this app handles children's personal data by design — Play's
    **Families Policy** compliance declarations. Expect this review to take
    longer than everything above combined.
-4. `android:minSdkVersion` is 21 (Android 5.0+) by bubblewrap's default,
+5. `android:minSdkVersion` is 21 (Android 5.0+) by bubblewrap's default,
    generous enough not to need changing.
