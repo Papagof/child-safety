@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.shmeera.app",
       "sha256_cert_fingerprints": [
-        "DF:6B:0E:61:68:8F:B1:72:92:FE:19:13:34:4A:D9:73:C0:19:2C:46:2F:DA:64:FD:46:05:F9:E9:B0:90:96:6A"
+        "DF:6B:0E:61:68:8F:B1:72:92:FE:19:13:34:4A:D9:73:C0:19:2C:46:2F:DA:64:FD:46:05:F9:E9:B0:90:96:6A",
+        "7F:C3:87:ED:15:86:E4:9D:92:EC:62:54:F5:86:8D:0F:56:E5:93:2C:AD:45:B2:26:6E:73:BC:42:79:90:62:03"
       ]
     }
   }

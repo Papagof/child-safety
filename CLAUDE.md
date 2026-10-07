@@ -333,11 +333,21 @@ not-recognized failure specific to Git Bash (use PowerShell instead), and a 403 
 Hostinger's CDN under bubblewrap's default fetch engine (force `node-fetch`).
 `client/public/.well-known/assetlinks.json` is the reverse half of the trust relationship
 (declares the Android app's package id + signing certificate fingerprint as trusted by
-the site) — it needs a second fingerprint added once the app is enrolled in Google Play
-App Signing, since end users install Google's re-signed APK, not the locally-built one.
-A signed APK/AAB has been built and verified locally; nothing has been uploaded to Play
-Console (needs a developer account, store listing, and Families Policy compliance
-declarations — none of that is automatable from here).
+the site) — it carries two fingerprints: the local upload key and, since end users
+install Google's re-signed APK rather than the locally-built one, the Play App Signing
+key fingerprint (Play Console → Release → Setup → App integrity → App signing → "App
+signing key certificate" — Google renamed this page from "App signing" to "App
+integrity" at some point, the setting itself is unchanged). `twa-manifest.json`'s
+`fingerprints` array keeps both for the record, same reasoning. `minSdkVersion` is 24,
+not bubblewrap's 21 default — Play's automatic app protection requires 24+ and rejects a
+21 upload outright, caught the first time an AAB was actually uploaded.
+A signed APK/AAB has been built, verified locally, and uploaded to Play Console's Closed
+testing track (required for any account created after Nov 13 2023 — 12+ opted-in testers
+for 14 consecutive days before Production unlocks, the clock resetting if the count drops
+below 12 on any day). Store listing (description, screenshots, feature graphic, app icon)
+and Data safety/Families Policy declarations are filled in; `play-store-assets/` (not
+committed — local only) holds the generated screenshots, feature graphic, and 512x512
+app icon.
 
 ## Automated safety tests
 
